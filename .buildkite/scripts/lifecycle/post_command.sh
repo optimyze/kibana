@@ -24,7 +24,7 @@ if [[ "$IS_TEST_EXECUTION_STEP" == "true" ]]; then
   buildkite-agent artifact upload 'x-pack/test/functional/failure_debug/html/*.html'
   buildkite-agent artifact upload '.es/**/*.hprof'
 
-  if [[ "$CODE_COVERAGE" == "1" ]]; then
+  if [ -z ${CODE_COVERAGE+x} ]; then
     buildkite-agent artifact upload 'kibana-jest-coverage.tar.gz'
     buildkite-agent artifact upload 'kibana-functional-coverage.tar.gz'
     buildkite-agent artifact upload 'target/kibana-coverage/functional/*'
