@@ -7,6 +7,10 @@ source .buildkite/scripts/common/util.sh
 is_test_execution_step
 
 export CODE_COVERAGE=1
+echo "reading Kibana stats cluster creds from vault"
+export USER_FROM_VAULT="$(retry 5 5 vault read -field=username secret/kibana-issues/prod/coverage/elasticsearch)"
+export PASS_FROM_VAULT="$(retry 5 5 vault read -field=password secret/kibana-issues/prod/coverage/elasticsearch)"
+export HOST_FROM_VAULT="$(retry 5 5 vault read -field=host secret/kibana-issues/prod/coverage/elasticsearch)"
 
 .buildkite/scripts/bootstrap.sh
 
@@ -50,8 +54,4 @@ ls -laR target/kibana-coverage/
 # ingest results to Kibana stats cluster
 previousSha=abcde1234
 BUILD_NUMBER=12345
-echo "reading Kibana stats cluster creds from vault"
-export USER_FROM_VAULT="$(retry 5 5 vault read -field=username secret/kibana-issues/prod/coverage/elasticsearch)"
-export PASS_FROM_VAULT="$(retry 5 5 vault read -field=password secret/kibana-issues/prod/coverage/elasticsearch)"
-export HOST_FROM_VAULT="$(retry 5 5 vault read -field=host secret/kibana-issues/prod/coverage/elasticsearch)"
 .src/dev/code_coverage/shell_scripts/generate_team_assignments_and_ingest_coverage.sh 'code-coverage' ${BUILD_NUMBER} '${BUILD_URL}' '${previousSha}' 'src/dev/code_coverage/ingest_coverage/team_assignment/team_assignments.txt'
