@@ -35,13 +35,13 @@ node scripts/generate_team_assignments.js --verbose --src .github/CODEOWNERS --d
 # Need to override COVERAGE_INGESTION_KIBANA_ROOT since json file has original intake worker path
 export COVERAGE_INGESTION_KIBANA_ROOT=/dev/shm/workspace/kibana
 
-for x in functional jest; do
+#for x in functional jest; do
   echo "### Ingesting coverage for ${x}"
-  COVERAGE_SUMMARY_FILE=target/kibana-coverage/${x}-combined/coverage-summary.json
+  COVERAGE_SUMMARY_FILE=target/kibana-coverage/jest-combined/coverage-summary.json
   # running in background to speed up ingestion
   node scripts/ingest_coverage.js --path ${COVERAGE_SUMMARY_FILE} --vcsInfoPath ./VCS_INFO.txt --teamAssignmentsPath $TEAM_ASSIGN_PATH &
-done
-wait
+#done
+#wait
 
 echo "###  Ingesting Code Coverage - Complete"
 echo ""

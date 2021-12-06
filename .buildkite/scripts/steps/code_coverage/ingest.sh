@@ -16,7 +16,7 @@ timestamp=$(date +"%Y-%m-%dT%H:%M:%S:00Z")
 
 # download coverage arctifacts
 buildkite-agent artifact download target/kibana-coverage/jest/* . --build "${KIBANA_BUILD_ID:-$BUILDKITE_BUILD_ID}"
-buildkite-agent artifact download target/kibana-coverage/functional/* . --build "${KIBANA_BUILD_ID:-$BUILDKITE_BUILD_ID}"
+#buildkite-agent artifact download target/kibana-coverage/functional/* . --build "${KIBANA_BUILD_ID:-$BUILDKITE_BUILD_ID}"
 
 # process HTML Links
 #.buildkite/scripts/steps/code_coverage/ingest/prokLinks.sh
@@ -32,14 +32,14 @@ echo "--- Jest: merging coverage files and generating the final combined report"
 yarn nyc report --nycrc-path src/dev/code_coverage/nyc_config/nyc.jest.config.js
 rm -rf target/kibana-coverage/jest
 
-sed -i "s|/opt/local-ssd/buildkite/builds/kb-cigroup-4d-[[:xdigit:]]\{16\}/elastic/kibana-code-coverage-main/kibana|${KIBANA_DIR}|g" $COVERAGE_TEMP_DIR/functional/*.json
-echo "### Functional: merging json files and generating the final combined report"
-yarn nyc report --nycrc-path src/dev/code_coverage/nyc_config/nyc.functional.config.js
-rm -rf target/kibana-coverage/functional
+#sed -i "s|/opt/local-ssd/buildkite/builds/kb-cigroup-4d-[[:xdigit:]]\{16\}/elastic/kibana-code-coverage-main/kibana|${KIBANA_DIR}|g" $COVERAGE_TEMP_DIR/functional/*.json
+#echo "### Functional: merging json files and generating the final combined report"
+#yarn nyc report --nycrc-path src/dev/code_coverage/nyc_config/nyc.functional.config.js
+#rm -rf target/kibana-coverage/functional
 
 # archive reports to upload as build artifacts
-echo "--- Archive combined functional report"
-tar -czf kibana-functional-coverage.tar.gz target/kibana-coverage/functional-combined
+#echo "--- Archive combined functional report"
+#tar -czf kibana-functional-coverage.tar.gz target/kibana-coverage/functional-combined
 echo "--- Archive combined jest report"
 tar -czf kibana-jest-coverage.tar.gz target/kibana-coverage/jest-combined
 
