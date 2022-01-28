@@ -8,11 +8,11 @@
 import type { DataRequestHandlerContext } from '../../../data/server';
 import type { IRouter } from '../../../../core/server';
 import { getRemoteRoutePaths } from '../../common';
-import { queryTopNCommon } from "./search_topN";
+import { queryTopNCommon } from './search_topN';
 
 export function registerTraceEventsTopNHostsSearchRoute(
   router: IRouter<DataRequestHandlerContext>
 ) {
   const paths = getRemoteRoutePaths();
-  return queryTopNCommon(router, paths.TopNHosts, 'HostName');
+  return queryTopNCommon(router, paths.TopNHosts, 'HostID');
 }
