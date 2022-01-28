@@ -19,13 +19,15 @@ function transformFlamechart(src) {
   };
   Object.keys(src.TopNTraces).map((key) => {
     obj.TopN[key] = src.TopNTraces[key].map((item) => {
-      return { Value: item.TraceHash, Count: item.Count };
+      return { Value: item.StackTraceID, Count: item.Count };
     });
   });
   return obj;
 }
 
-export function registerTraceEventsTopNStackTracesRoute(router: IRouter<DataRequestHandlerContext>) {
+export function registerTraceEventsTopNStackTracesRoute(
+  router: IRouter<DataRequestHandlerContext>
+) {
   const paths = getLocalRoutePaths();
   router.get(
     {
@@ -39,9 +41,9 @@ export function registerTraceEventsTopNStackTracesRoute(router: IRouter<DataRequ
         }),
       },
     },
-   async (ctx, request, response) => {
-      const timeFrom = parseInt(request.query.timeFrom);
-      const timeTo = parseInt(request.query.timeTo);
+    async (ctx, request, response) => {
+      const timeFrom = parseInt(request.query.timeFrom, 10);
+      const timeTo = parseInt(request.query.timeTo, 10);
       const seconds = timeTo - timeFrom;
       const src = await import(`../fixtures/traces_${seconds}`);
       delete src.default;
