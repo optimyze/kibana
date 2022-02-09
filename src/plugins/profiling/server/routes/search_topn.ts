@@ -7,7 +7,10 @@
  */
 import { schema } from '@kbn/config-schema';
 import type { IRouter } from 'kibana/server';
-import { IEsSearchResponse } from '../../../data/common';
+import {
+  AggregationsHistogramBucket,
+  AggregationsMultiBucketAggregateBase,
+} from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
 
@@ -94,14 +97,14 @@ export function queryTopNCommon(
 
         if (searchField === 'StackTraceID') {
           const docIDs: string[] = [];
-          const autoDateHistogram = resTopNStackTraces.body.aggregations?.histogram!;
-          if ('buckets' in autoDateHistogram) {
-            autoDateHistogram.buckets.forEach((timeInterval) => {
-              timeInterval.group_by.buckets.forEach((stackTraceItem: any) => {
-                docIDs.push(stackTraceItem.key);
-              });
+          const autoDateHistogram = resTopNStackTraces.body.aggregations
+            ?.histogram as AggregationsMultiBucketAggregateBase<AggregationsHistogramBucket>;
+
+          autoDateHistogram.buckets?.forEach((timeInterval: any) => {
+            timeInterval.group_by.buckets.forEach((stackTraceItem: any) => {
+              docIDs.push(stackTraceItem.key);
             });
-          }
+          });
 
           const resTraceMetadata = await esClient.mget<any>({
             index: 'profiling-stacktraces',
