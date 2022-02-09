@@ -6,6 +6,62 @@
  * Side Public License, v 1.
  */
 
+interface ProjectTimeRangeFilter {
+  bool: {
+    must: Array<
+      | {
+          term: {
+            ProjectID: {
+              value: string;
+              boost: number;
+            };
+          };
+        }
+      | {
+          range: {
+            '@timestamp': {
+              gte: string;
+              lt: string;
+              format: string;
+              boost: number;
+            };
+          };
+        }
+    >;
+  };
+}
+
+export function projectTimeRangeQuery(
+  projectID: string,
+  timeFrom: string,
+  timeTo: string
+): ProjectTimeRangeFilter {
+  return {
+    bool: {
+      must: [
+        {
+          term: {
+            ProjectID: {
+              value: projectID,
+              boost: 1.0,
+            },
+          },
+        },
+        {
+          range: {
+            '@timestamp': {
+              gte: timeFrom,
+              lt: timeTo,
+              format: 'epoch_second',
+              boost: 1.0,
+            },
+          },
+        },
+      ],
+    },
+  } as ProjectTimeRangeFilter;
+}
+
 function getExeFileName(obj) {
   if (obj.ExeFileName === undefined) {
     return '';

@@ -13,6 +13,7 @@ import {
 } from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
+import { projectTimeRangeQuery } from './mappings';
 
 export function queryTopNCommon(
   router: IRouter<DataRequestHandlerContext>,
@@ -40,30 +41,7 @@ export function queryTopNCommon(
           {
             index,
             body: {
-              query: {
-                bool: {
-                  must: [
-                    {
-                      term: {
-                        ProjectID: {
-                          value: projectID!,
-                          boost: 1.0,
-                        },
-                      },
-                    },
-                    {
-                      range: {
-                        '@timestamp': {
-                          gte: timeFrom,
-                          lt: timeTo,
-                          format: 'epoch_second',
-                          boost: 1.0,
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
+              query: projectTimeRangeQuery(projectID!, timeFrom!, timeTo!),
               aggs: {
                 histogram: {
                   auto_date_histogram: {
