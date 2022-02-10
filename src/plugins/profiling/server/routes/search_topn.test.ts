@@ -16,7 +16,7 @@ const index = 'test';
 const testAgg = { aggs: { test: {} } };
 
 jest.mock('./mappings', () => ({
-  projectTimeRangeQuery: (proj: string, from: string, to: string) => {
+  newProjectTimeQuery: (proj: string, from: string, to: string) => {
     return anyQuery;
   },
   autoHistogramSumCountOnGroupByField: (searchField: string): AggregationsAggregationContainer => {
@@ -87,18 +87,15 @@ describe('TopN data from Elasticsearch', () => {
         'field',
         kibanaResponseFactory
       );
-      expect(mock.core.elasticsearch.client.asCurrentUser.search).toHaveBeenCalledWith(
-        {
-          index,
-          body: {
-            query: anyQuery,
-            aggs: {
-              histogram: testAgg,
-            },
+      expect(mock.core.elasticsearch.client.asCurrentUser.search).toHaveBeenCalledWith({
+        index,
+        body: {
+          query: anyQuery,
+          aggs: {
+            histogram: testAgg,
           },
         },
-        undefined
-      );
+      });
     });
   });
   describe('when fetching Stack Traces', () => {

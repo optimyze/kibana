@@ -13,7 +13,7 @@ import {
 } from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
-import { projectTimeRangeQuery, autoHistogramSumCountOnGroupByField } from './mappings';
+import { newProjectTimeQuery, autoHistogramSumCountOnGroupByField } from './mappings';
 
 export async function topNElasticSearchQuery(
   context: DataRequestHandlerContext,
@@ -25,18 +25,15 @@ export async function topNElasticSearchQuery(
   response: KibanaResponseFactory
 ) {
   const esClient = context.core.elasticsearch.client.asCurrentUser;
-  const resTopNStackTraces = await esClient.search(
-    {
-      index,
-      body: {
-        query: projectTimeRangeQuery(projectID, timeFrom, timeTo),
-        aggs: {
-          histogram: autoHistogramSumCountOnGroupByField(searchField),
-        },
+  const resTopNStackTraces = await esClient.search({
+    index,
+    body: {
+      query: newProjectTimeQuery(projectID, timeFrom, timeTo),
+      aggs: {
+        histogram: autoHistogramSumCountOnGroupByField(searchField),
       },
     },
-    undefined
-  );
+  });
 
   if (searchField === 'StackTraceID') {
     const autoDateHistogram = resTopNStackTraces.body.aggregations

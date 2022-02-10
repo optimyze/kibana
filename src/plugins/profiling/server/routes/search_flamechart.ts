@@ -10,7 +10,7 @@ import type { IRouter } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
 import { FlameGraph } from './flamegraph';
-import { projectTimeRangeQuery } from './mappings';
+import { newProjectTimeQuery } from './mappings';
 
 function getSampledTraceEventsIndex(
   sampleSize: number,
@@ -75,7 +75,7 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
 
       try {
         const esClient = context.core.elasticsearch.client.asCurrentUser;
-        const filter = projectTimeRangeQuery(projectID!, timeFrom!, timeTo!);
+        const filter = newProjectTimeQuery(projectID!, timeFrom!, timeTo!);
 
         // const resp = await getCountResponse(context, filter);
         const resp = await esClient.search({

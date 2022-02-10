@@ -8,7 +8,7 @@
 
 import { AggregationsAggregationContainer } from '@elastic/elasticsearch/lib/api/types';
 
-interface ProjectTimeRangeFilter {
+interface ProjectTimeQuery {
   bool: {
     must: Array<
       | {
@@ -33,11 +33,11 @@ interface ProjectTimeRangeFilter {
   };
 }
 
-export function projectTimeRangeQuery(
+export function newProjectTimeQuery(
   projectID: string,
   timeFrom: string,
   timeTo: string
-): ProjectTimeRangeFilter {
+): ProjectTimeQuery {
   return {
     bool: {
       must: [
@@ -61,7 +61,7 @@ export function projectTimeRangeQuery(
         },
       ],
     },
-  } as ProjectTimeRangeFilter;
+  } as ProjectTimeQuery;
 }
 
 export function autoHistogramSumCountOnGroupByField(
