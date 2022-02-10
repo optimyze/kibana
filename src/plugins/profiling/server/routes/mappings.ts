@@ -6,6 +6,8 @@
  * Side Public License, v 1.
  */
 
+import { AggregationsAggregationContainer } from '@elastic/elasticsearch/lib/api/types';
+
 interface ProjectTimeRangeFilter {
   bool: {
     must: Array<
@@ -60,6 +62,35 @@ export function projectTimeRangeQuery(
       ],
     },
   } as ProjectTimeRangeFilter;
+}
+
+export function autoHistogramSumCountOnGroupByField(
+  searchField: string
+): AggregationsAggregationContainer {
+  return {
+    auto_date_histogram: {
+      field: '@timestamp',
+      buckets: 100,
+    },
+    aggs: {
+      group_by: {
+        terms: {
+          field: searchField,
+          order: {
+            Count: 'desc',
+          },
+          size: 100,
+        },
+        aggs: {
+          Count: {
+            sum: {
+              field: 'Count',
+            },
+          },
+        },
+      },
+    },
+  };
 }
 
 function getExeFileName(obj) {
