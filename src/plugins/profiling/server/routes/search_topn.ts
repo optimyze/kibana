@@ -35,14 +35,14 @@ export async function topNElasticSearchQuery(
         },
       },
     },
-    {}
+    undefined
   );
 
   if (searchField === 'StackTraceID') {
-    const docIDs: string[] = [];
     const autoDateHistogram = resTopNStackTraces.body.aggregations
       ?.histogram as AggregationsMultiBucketAggregateBase<AggregationsHistogramBucket>;
 
+    const docIDs: string[] = [];
     autoDateHistogram.buckets?.forEach((timeInterval: any) => {
       timeInterval.group_by.buckets.forEach((stackTraceItem: any) => {
         docIDs.push(stackTraceItem.key);

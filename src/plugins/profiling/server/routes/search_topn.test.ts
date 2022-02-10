@@ -24,13 +24,43 @@ jest.mock('./mappings', () => ({
   },
 }));
 
-function mockDataContext() {
+function mockTopNData() {
   return {
     core: {
       elasticsearch: {
         client: {
           asCurrentUser: {
-            search: jest.fn().mockResolvedValue({ body: {} }),
+            search: jest.fn().mockResolvedValue({
+              body: {
+                aggregations: {
+                  histogram: {
+                    buckets: [
+                      {
+                        key_as_string: '1644506880',
+                        key: 1644506880000,
+                        doc_count: 700,
+                        group_by: {
+                          buckets: [
+                            {
+                              key: 'vyHke_Kdp2c05tXV7a_Rkg==',
+                              doc_count: 10,
+                              Count: {
+                                value: 100.0,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+            mget: jest.fn().mockResolvedValue({
+              body: {
+                docs: [],
+              },
+            }),
           },
         },
       },
@@ -38,30 +68,52 @@ function mockDataContext() {
   };
 }
 
-describe('Getting data from Elasticsearch', () => {
-  it('build a query that filters by projectID and aggregates timerange on histogram', async () => {
-    const mock = mockDataContext();
-    const queryMock = mock as unknown as DataRequestHandlerContext;
-    await topNElasticSearchQuery(
-      queryMock,
-      index,
-      '123',
-      '456',
-      '789',
-      'field',
-      kibanaResponseFactory
-    );
-    expect(mock.core.elasticsearch.client.asCurrentUser.search).toHaveBeenCalledWith(
-      {
+describe('TopN data from Elasticsearch', () => {
+  const mock = mockTopNData();
+  const queryMock = mock as unknown as DataRequestHandlerContext;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('building the query', () => {
+    it('filters by projectID and aggregates timerange on histogram', async () => {
+      await topNElasticSearchQuery(
+        queryMock,
         index,
-        body: {
-          query: anyQuery,
-          aggs: {
-            histogram: testAgg,
+        '123',
+        '456',
+        '789',
+        'field',
+        kibanaResponseFactory
+      );
+      expect(mock.core.elasticsearch.client.asCurrentUser.search).toHaveBeenCalledWith(
+        {
+          index,
+          body: {
+            query: anyQuery,
+            aggs: {
+              histogram: testAgg,
+            },
           },
         },
-      },
-      {}
-    );
+        undefined
+      );
+    });
+  });
+  describe('when fetching Stack Traces', () => {
+    it('should search first then mget', async () => {
+      await topNElasticSearchQuery(
+        queryMock,
+        index,
+        '123',
+        '456',
+        '789',
+        'StackTraceID',
+        kibanaResponseFactory
+      );
+      expect(mock.core.elasticsearch.client.asCurrentUser.search).toHaveBeenCalledTimes(1);
+      expect(mock.core.elasticsearch.client.asCurrentUser.mget).toHaveBeenCalledTimes(1);
+    });
   });
 });
