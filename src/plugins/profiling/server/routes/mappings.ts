@@ -10,13 +10,10 @@ import { AggregationsAggregationContainer } from '@elastic/elasticsearch/lib/api
 
 interface ProjectTimeQuery {
   bool: {
-    must: Array<
+    filter: Array<
       | {
           term: {
-            ProjectID: {
-              value: string;
-              boost: number;
-            };
+            ProjectID: string;
           };
         }
       | {
@@ -40,13 +37,10 @@ export function newProjectTimeQuery(
 ): ProjectTimeQuery {
   return {
     bool: {
-      must: [
+      filter: [
         {
           term: {
-            ProjectID: {
-              value: projectID,
-              boost: 1.0,
-            },
+            ProjectID: projectID,
           },
         },
         {
@@ -76,9 +70,10 @@ export function autoHistogramSumCountOnGroupByField(
       group_by: {
         terms: {
           field: searchField,
-          order: {
-            Count: 'desc',
-          },
+          // We remove the ordering since we will rely directly on the natural
+          // ordering of Elasticsearch: by default this will be the descending count
+          // of matched documents. This is not equal to the ordering by sum of Count field,
+          // but it's a good-enough approximation given the distribution of Count.
           size: 100,
         },
         aggs: {

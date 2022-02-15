@@ -8,12 +8,13 @@
 import { schema } from '@kbn/config-schema';
 import type { IRouter, KibanaResponseFactory } from 'kibana/server';
 import {
+  AggregationsHistogramAggregate,
   AggregationsHistogramBucket,
-  AggregationsMultiBucketAggregateBase,
+  AggregationsStringTermsBucket,
 } from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
-import { newProjectTimeQuery, autoHistogramSumCountOnGroupByField } from './mappings';
+import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mappings';
 
 export async function topNElasticSearchQuery(
   context: DataRequestHandlerContext,
@@ -36,17 +37,16 @@ export async function topNElasticSearchQuery(
   });
 
   if (searchField === 'StackTraceID') {
-    const autoDateHistogram = resTopNStackTraces.body.aggregations
-      ?.histogram as AggregationsMultiBucketAggregateBase<AggregationsHistogramBucket>;
-
     const docIDs: string[] = [];
-    autoDateHistogram.buckets?.forEach((timeInterval: any) => {
-      timeInterval.group_by.buckets.forEach((stackTraceItem: any) => {
+    (
+      resTopNStackTraces.body.aggregations?.histogram as AggregationsHistogramAggregate
+    ).buckets.forEach((timeInterval: AggregationsHistogramBucket) => {
+      timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
         docIDs.push(stackTraceItem.key);
       });
     });
 
-    const resTraceMetadata = await esClient.mget<any>({
+    const resTraceMetadata = await esClient.mget({
       index: 'profiling-stacktraces',
       body: { ids: docIDs },
     });
