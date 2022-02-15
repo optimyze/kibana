@@ -22,6 +22,7 @@ export async function topNElasticSearchQuery(
   projectID: string,
   timeFrom: string,
   timeTo: string,
+  topNItems: number,
   searchField: string,
   response: KibanaResponseFactory
 ) {
@@ -31,7 +32,7 @@ export async function topNElasticSearchQuery(
     body: {
       query: newProjectTimeQuery(projectID, timeFrom, timeTo),
       aggs: {
-        histogram: autoHistogramSumCountOnGroupByField(searchField),
+        histogram: autoHistogramSumCountOnGroupByField(searchField, topNItems),
       },
     },
   });
@@ -76,23 +77,25 @@ export function queryTopNCommon(
       path: pathName,
       validate: {
         query: schema.object({
-          index: schema.maybe(schema.string()),
-          projectID: schema.maybe(schema.string()),
-          timeFrom: schema.maybe(schema.string()),
-          timeTo: schema.maybe(schema.string()),
+          index: schema.string(),
+          projectID: schema.string(),
+          timeFrom: schema.string(),
+          timeTo: schema.string(),
+          n: schema.number(),
         }),
       },
     },
     async (context, request, response) => {
-      const { index, projectID, timeFrom, timeTo } = request.query;
+      const { index, projectID, timeFrom, timeTo, n } = request.query;
 
       try {
         return await topNElasticSearchQuery(
           context,
-          index!,
-          projectID!,
-          timeFrom!,
-          timeTo!,
+          index,
+          projectID,
+          timeFrom,
+          timeTo,
+          n,
           searchField,
           response
         );

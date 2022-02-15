@@ -59,12 +59,13 @@ export function newProjectTimeQuery(
 }
 
 export function autoHistogramSumCountOnGroupByField(
-  searchField: string
+  searchField: string,
+  topNItems: number
 ): AggregationsAggregationContainer {
   return {
     auto_date_histogram: {
       field: '@timestamp',
-      buckets: 100,
+      buckets: 50,
     },
     aggs: {
       group_by: {
@@ -74,7 +75,7 @@ export function autoHistogramSumCountOnGroupByField(
           // ordering of Elasticsearch: by default this will be the descending count
           // of matched documents. This is not equal to the ordering by sum of Count field,
           // but it's a good-enough approximation given the distribution of Count.
-          size: 100,
+          size: topNItems,
         },
         aggs: {
           Count: {
