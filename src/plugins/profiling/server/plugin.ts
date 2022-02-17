@@ -9,23 +9,11 @@ import { PluginInitializerContext, CoreSetup, CoreStart, Plugin, Logger } from '
 
 import type { DataRequestHandlerContext } from '../../data/server';
 
-import {
-  ProfilingPluginSetup,
-  ProfilingPluginStart,
-  ProfilingPluginSetupDeps,
-  ProfilingPluginStartDeps,
-} from './types';
-import { mySearchStrategyProvider } from './my_strategy';
+import { ProfilingPluginSetupDeps, ProfilingPluginStartDeps } from './types';
 import { registerRoutes } from './routes';
 
 export class ProfilingPlugin
-  implements
-    Plugin<
-      ProfilingPluginSetup,
-      ProfilingPluginStart,
-      ProfilingPluginSetupDeps,
-      ProfilingPluginStartDeps
-    >
+  implements Plugin<void, void, ProfilingPluginSetupDeps, ProfilingPluginStartDeps>
 {
   private readonly logger: Logger;
 
@@ -33,21 +21,25 @@ export class ProfilingPlugin
     this.logger = initializerContext.logger.get();
   }
 
-  public setup(core: CoreSetup<ProfilingPluginStartDeps>, deps: ProfilingPluginSetupDeps) {
+  public setup(core: CoreSetup<ProfilingPluginStartDeps>, { data }: ProfilingPluginSetupDeps) {
     this.logger.debug('profiling: Setup');
+    // TODO we should create a query here using "data".
+    // We should ensure there are profiling data in the expected indices
+    // and return an error otherwise.
+    // This should be done only once at startup and before exposing the routed APIs.
     const router = core.http.createRouter<DataRequestHandlerContext>();
-
-    core.getStartServices().then(([_, depsStart]) => {
-      const myStrategy = mySearchStrategyProvider(depsStart.data);
-      deps.data.search.registerSearchStrategy('myStrategy', myStrategy);
+    core.getStartServices().then(() => {
       registerRoutes(router, this.logger);
     });
 
     return {};
   }
 
-  public start(core: CoreStart) {
+  public start(core: CoreStart, { data }: ProfilingPluginStartDeps) {
     this.logger.debug('profiling: Started');
+    // TODO preload down-sampling factor value here.
+    // We want to calculate and set into a class property the starting index to read data from.
+    // We may want to do this here to speed up the resolution of queries afterwards.
     return {};
   }
 

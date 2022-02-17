@@ -5,7 +5,7 @@
  * in compliance with, at your election, the Elastic License 2.0 or the Server
  * Side Public License, v 1.
  */
-import { PluginInitializerContext } from '../../../core/server';
+import { PluginInitializerContext } from 'kibana/server';
 import { ProfilingPlugin } from './plugin';
 
 //  This exports static code and TypeScript types,
@@ -14,5 +14,3 @@ import { ProfilingPlugin } from './plugin';
 export function plugin(initializerContext: PluginInitializerContext) {
   return new ProfilingPlugin(initializerContext);
 }
-
-export { ProfilingPluginSetup, ProfilingPluginStart } from './types';

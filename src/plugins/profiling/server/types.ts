@@ -5,17 +5,15 @@
  * in compliance with, at your election, the Elastic License 2.0 or the Server
  * Side Public License, v 1.
  */
-import { PluginSetup, PluginStart } from '../../data/server';
+import {
+  PluginSetup as DataPluginSetup,
+  PluginStart as DataPluginStart,
+} from '../../../../src/plugins/data/server';
 
 export interface ProfilingPluginSetupDeps {
-  data: PluginSetup;
+  data: DataPluginSetup;
 }
 
 export interface ProfilingPluginStartDeps {
-  data: PluginStart;
+  data: DataPluginStart;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ProfilingPluginSetup {}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ProfilingPluginStart {}
