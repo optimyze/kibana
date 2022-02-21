@@ -81,7 +81,7 @@ export function queryTopNCommon(
           projectID: schema.string(),
           timeFrom: schema.string(),
           timeTo: schema.string(),
-          n: schema.number(),
+          n: schema.number({ defaultValue: 100 }),
         }),
       },
     },

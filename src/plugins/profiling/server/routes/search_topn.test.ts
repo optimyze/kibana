@@ -121,4 +121,10 @@ describe('TopN data from Elasticsearch', () => {
       expect(mock.core.elasticsearch.client.asCurrentUser.mget).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('using the data plugin', () => {
+    it('should call the data plugin search as current user', async () => {
+      // TODO
+    });
+  });
 });
