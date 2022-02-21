@@ -6,6 +6,8 @@
  * Side Public License, v 1.
  */
 
+import { TopNAggregateResponse, TopNHistogramBucket, TopNItemCountAggregation } from './types';
+
 export const PLUGIN_ID = 'profiling';
 export const PLUGIN_NAME = 'profiling';
 
@@ -44,19 +46,33 @@ function toMilliseconds(seconds: string): number {
   return parseInt(seconds, 10) * 1000;
 }
 
-export function getTopN(obj) {
-  const data = [];
+export interface TopNDisplayData {
+  x: number | string;
+  y: number | string;
+  g: number | string;
+}
 
-  if (obj.topN?.histogram?.buckets!) {
-    // needed for data served from Elasticsearch
-    for (let i = 0; i < obj.topN.histogram.buckets.length; i++) {
-      const bucket = obj.topN.histogram.buckets[i];
-      for (let j = 0; j < bucket.group_by.buckets.length; j++) {
-        const v = bucket.group_by.buckets[j];
-        data.push({ x: bucket.key, y: v.Count.value, g: v.key });
-      }
-    }
-  } else if (obj.TopN!) {
+export function getTopNDisplayData(esResp: TopNAggregateResponse): TopNDisplayData[] {
+  const data: TopNDisplayData[] = [];
+  // needed for data served from Elasticsearch
+  esResp.topN.histogram.buckets.forEach((timeBucket: TopNHistogramBucket) => {
+    timeBucket.group_by.buckets.forEach((stacktraceBucket: TopNItemCountAggregation) => {
+      data.push({
+        x: timeBucket.key,
+        y: stacktraceBucket.Count.value as number,
+        g: stacktraceBucket.key,
+      });
+    });
+  });
+
+  return data;
+}
+// FIXME remove this in favor of getTopNDisplayData when fixtures are not needed anymore
+export function getTopN(obj): TopNDisplayData[] {
+  const data: TopNDisplayData[] = [];
+
+  // This is where we are fed the fixtures
+  if (obj.TopN!) {
     // needed for data served from fixtures
     for (const x in obj.TopN) {
       if (obj.TopN.hasOwnProperty(x)) {
@@ -67,12 +83,13 @@ export function getTopN(obj) {
         }
       }
     }
+    return data;
+  } else {
+    return getTopNDisplayData(obj);
   }
-
-  return data;
 }
 
-export function groupSamplesByCategory(samples) {
+export function groupSamplesByCategory(samples: TopNDisplayData[]) {
   const series = new Map();
   for (let i = 0; i < samples.length; i++) {
     const v = samples[i];

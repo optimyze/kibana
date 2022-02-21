@@ -9,13 +9,8 @@
 import { topNElasticSearchQuery } from './search_topn';
 import { DataRequestHandlerContext } from '../../../data/server';
 import { kibanaResponseFactory } from '../../../../core/server';
-import {
-  AggregationsAggregationContainer,
-  AggregationsHistogramAggregate,
-  AggregationsHistogramBucket,
-  AggregationsMultiBucketAggregateBase,
-  AggregationsStringTermsBucket,
-} from '@elastic/elasticsearch/lib/api/types';
+import { AggregationsAggregationContainer } from '@elastic/elasticsearch/lib/api/types';
+import { TopNHistogramAggregation, TopNItemCountAggregation } from '../../common/types';
 
 const anyQuery = 'any::query';
 const index = 'test';
@@ -46,6 +41,8 @@ function mockTopNData() {
                         key: 123000,
                         doc_count: 10,
                         group_by: {
+                          doc_count_error_upper_bound: 0,
+                          sum_other_doc_count: 0,
                           buckets: [
                             {
                               key: '::any::key::',
@@ -53,13 +50,13 @@ function mockTopNData() {
                               Count: {
                                 value: 100.0,
                               },
-                            } as AggregationsStringTermsBucket,
+                            } as TopNItemCountAggregation,
                           ],
-                        } as AggregationsMultiBucketAggregateBase<AggregationsStringTermsBucket>,
-                      } as AggregationsHistogramBucket,
+                        },
+                      },
                     ],
-                  } as AggregationsHistogramAggregate,
-                },
+                  } as TopNHistogramAggregation,
+                } as AggregationsAggregationContainer,
               },
             }),
             mget: jest.fn().mockResolvedValue({

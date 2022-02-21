@@ -7,14 +7,14 @@
  */
 import { schema } from '@kbn/config-schema';
 import type { IRouter, KibanaResponseFactory } from 'kibana/server';
-import {
-  AggregationsHistogramAggregate,
-  AggregationsHistogramBucket,
-  AggregationsStringTermsBucket,
-} from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
 import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mappings';
+import {
+  TopNHistogramAggregation,
+  TopNHistogramBucket,
+  TopNItemCountAggregation,
+} from '../../common/types';
 
 export async function topNElasticSearchQuery(
   context: DataRequestHandlerContext,
@@ -39,13 +39,13 @@ export async function topNElasticSearchQuery(
 
   if (searchField === 'StackTraceID') {
     const docIDs: string[] = [];
-    (
-      resTopNStackTraces.body.aggregations?.histogram as AggregationsHistogramAggregate
-    ).buckets.forEach((timeInterval: AggregationsHistogramBucket) => {
-      timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
-        docIDs.push(stackTraceItem.key);
-      });
-    });
+    (resTopNStackTraces.body.aggregations?.histogram as TopNHistogramAggregation).buckets.forEach(
+      (timeInterval: TopNHistogramBucket) => {
+        timeInterval.group_by.buckets.forEach((stackTraceItem: TopNItemCountAggregation) => {
+          docIDs.push(stackTraceItem.key);
+        });
+      }
+    );
 
     const resTraceMetadata = await esClient.mget({
       index: 'profiling-stacktraces',
@@ -110,6 +110,11 @@ export function queryTopNCommon(
     }
   );
 }
+
+// TODO
+// register a strategy for TopN and flamegraph with the request parameters and query (optionally),
+// the strategy needs to be registered at Plugin.start using the dependencies.
+// Then use the strategy in context.search
 
 export function registerTraceEventsTopNContainersSearchRoute(
   router: IRouter<DataRequestHandlerContext>
