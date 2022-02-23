@@ -120,7 +120,7 @@ describe('TopN data from Elasticsearch', () => {
   });
 
   describe('using the data plugin', () => {
-    it('should call the data plugin search as current user', async () => {
+    it('should call the context search as current user', async () => {
       // TODO
     });
   });

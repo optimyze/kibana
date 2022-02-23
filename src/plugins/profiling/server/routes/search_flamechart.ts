@@ -30,7 +30,7 @@ async function logExecutionLatency<T>(
   });
 }
 
-const downsampledIndex = 'profiling-events-5pow';
+export const downsampledIndex = 'profiling-events-5pow';
 
 // Return the index that has between targetSampleSize..targetSampleSize*samplingFactor entries.
 // The starting point is the number of entries from the profiling-events-5pow<initialExp> index.
