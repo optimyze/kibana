@@ -8,11 +8,15 @@
 
 import { CoreStart, HttpFetchError, HttpFetchQuery } from 'kibana/public';
 import { getRemoteRoutePaths } from '../common';
+import { ProdfilerPluginStartDeps } from './plugin';
+import { DownsampledRequest, DownsampledTopNResponse } from '../common/types';
 
 export interface Services {
   fetchTopN: (type: string, seconds: string) => Promise<any[] | HttpFetchError>;
   fetchElasticFlamechart: (seconds: string) => Promise<any[] | HttpFetchError>;
   fetchPixiFlamechart: (seconds: string) => Promise<any[] | HttpFetchError>;
+  // FIXME
+  fetchTopNData?: (searchField: string, seconds: string) => Promise<DownsampledTopNResponse>;
 }
 
 function getFetchQuery(seconds: string): HttpFetchQuery {
@@ -27,11 +31,35 @@ function getFetchQuery(seconds: string): HttpFetchQuery {
   } as HttpFetchQuery;
 }
 
-export function getServices(core: CoreStart): Services {
+export function getServices(core: CoreStart, data?: ProdfilerPluginStartDeps): Services {
   // To use local fixtures instead, use getLocalRoutePaths
   const paths = getRemoteRoutePaths();
 
   return {
+    fetchTopNData: (searchField: string, seconds: string): Promise<DownsampledTopNResponse> => {
+      const unixTime = Math.floor(Date.now() / 1000);
+      return (
+        data!.data.search
+          .search<DownsampledRequest, DownsampledTopNResponse>(
+            {
+              params: {
+                projectID: 5,
+                timeFrom: unixTime - parseInt(seconds, 10),
+                timeTo: unixTime,
+                // FIXME remove hard-coded value for topN items length and expose it through the UI
+                topNItems: 100,
+                searchField,
+              },
+            },
+            {
+              strategy: 'downsampledTopN',
+            }
+          )
+          // get the results and prepare the Promise
+          .toPromise<DownsampledTopNResponse>()
+      );
+    },
+
     fetchTopN: async (type: string, seconds: string) => {
       try {
         const query = getFetchQuery(seconds);

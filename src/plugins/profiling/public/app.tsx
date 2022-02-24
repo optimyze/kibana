@@ -33,7 +33,7 @@ import { Services } from './services';
 
 type Props = Services;
 
-function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) {
+function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart, fetchTopNData }: Props) {
   const [topn, setTopN] = useState({
     samples: [],
     series: new Map(),
