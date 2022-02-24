@@ -5,12 +5,14 @@
  * in compliance with, at your election, the Elastic License 2.0 or the Server
  * Side Public License, v 1.
  */
-import { PluginInitializerContext, CoreSetup, CoreStart, Plugin, Logger } from 'kibana/server';
+import { CoreSetup, CoreStart, Logger, Plugin, PluginInitializerContext } from 'kibana/server';
 
 import type { DataRequestHandlerContext } from '../../data/server';
 
 import { ProfilingPluginSetupDeps, ProfilingPluginStartDeps } from './types';
 import { registerRoutes } from './routes';
+import { DownsampledTopNFactory } from './search/strategy';
+import { DOWNSAMPLED_TOPN_STRATEGY } from '../common/types';
 
 export class ProfilingPlugin
   implements Plugin<void, void, ProfilingPluginSetupDeps, ProfilingPluginStartDeps>
@@ -21,14 +23,18 @@ export class ProfilingPlugin
     this.logger = initializerContext.logger.get();
   }
 
-  public setup(core: CoreSetup<ProfilingPluginStartDeps>, { data }: ProfilingPluginSetupDeps) {
+  public setup(core: CoreSetup<ProfilingPluginStartDeps>, deps: ProfilingPluginSetupDeps) {
     this.logger.debug('profiling: Setup');
     // TODO we should create a query here using "data".
     // We should ensure there are profiling data in the expected indices
     // and return an error otherwise.
     // This should be done only once at startup and before exposing the routed APIs.
     const router = core.http.createRouter<DataRequestHandlerContext>();
-    core.getStartServices().then(() => {
+    core.getStartServices().then(([_, depsStart]) => {
+      deps.data.search.registerSearchStrategy(
+        DOWNSAMPLED_TOPN_STRATEGY,
+        DownsampledTopNFactory(depsStart.data)
+      );
       registerRoutes(router, this.logger);
     });
 
