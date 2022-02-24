@@ -16,7 +16,7 @@ import {
   registerTraceEventsTopNThreadsRoute,
 } from './load_topn';
 
-import { registerFlameChartSearchRoute } from './search_flamechart';
+import { registerFlameChartElasticSearchRoute } from './search_flamechart';
 import {
   registerTraceEventsTopNContainersSearchRoute,
   registerTraceEventsTopNDeploymentsSearchRoute,
@@ -34,7 +34,7 @@ export function registerRoutes(router: IRouter<DataRequestHandlerContext>, logge
   registerTraceEventsTopNStackTracesRoute(router);
   registerTraceEventsTopNThreadsRoute(router);
 
-  registerFlameChartSearchRoute(router, logger!);
+  registerFlameChartElasticSearchRoute(router, logger!);
   registerTraceEventsTopNContainersSearchRoute(router);
   registerTraceEventsTopNDeploymentsSearchRoute(router);
   registerTraceEventsTopNHostsSearchRoute(router);

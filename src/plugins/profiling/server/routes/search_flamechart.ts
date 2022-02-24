@@ -272,7 +272,7 @@ async function queryFlameGraph(
   });
 }
 
-export function registerFlameChartSearchRoute(
+export function registerFlameChartElasticSearchRoute(
   router: IRouter<DataRequestHandlerContext>,
   logger: Logger
 ) {
