@@ -6,12 +6,12 @@
  * Side Public License, v 1.
  */
 import { schema } from '@kbn/config-schema';
-import type { IRouter } from 'kibana/server';
+import type { IRouter, Logger } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
-import { getRemoteRoutePaths, now, elapsed } from '../../common';
+import { getRemoteRoutePaths } from '../../common';
 import { FlameGraph } from './flamegraph';
 import { newProjectTimeQuery } from './mappings';
-import { StackTraceID, StackFrameID, FileID, StackTrace, StackFrame, Executable } from './types';
+import { Executable, FileID, StackFrame, StackFrameID, StackTrace, StackTraceID } from './types';
 
 export interface DownsampledEventsIndex {
   name: string;
@@ -65,7 +65,10 @@ export function getSampledTraceEventsIndex(
   return { name: downsampledIndex + initialExp, sampleRate: 1 / samplingFactor ** initialExp };
 }
 
-export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandlerContext>) {
+export function registerFlameChartSearchRoute(
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
+) {
   const paths = getRemoteRoutePaths();
   router.get(
     {
@@ -88,10 +91,12 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
         const esClient = context.core.elasticsearch.client.asCurrentUser;
         const filter = newProjectTimeQuery(projectID!, timeFrom!, timeTo!);
 
-        const startDS = now();
         // Start with counting the results in the index down-sampled by 5^6.
         // That is in the middle of our down-sampled indexes.
         const initialExp = 6;
+
+        logger.debug('Started downsampling query');
+        const startDS = now();
         const resp = await esClient.search({
           index: downsampledIndex + initialExp,
           body: {
@@ -102,17 +107,18 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
         });
         const sampleCountFromInitialExp = resp.body.hits.total.value as number;
 
-        console.log('sampleCountFromPow6', sampleCountFromInitialExp);
+        logger.debug('sampleCountFromPow6 ' + sampleCountFromInitialExp);
 
         const eventsIndex = getSampledTraceEventsIndex(
           targetSampleSize,
           sampleCountFromInitialExp,
           initialExp
         );
-        elapsed(startDS, 'findDownsampledIndex');
+        logger.debug(
+          'Completed downsampling calculation, findDownsampledIndex took ' + elapsed(startDS) + 'ms'
+        );
 
-        // eslint-disable-next-line no-console
-        console.log('EventsIndex', eventsIndex);
+        logger.debug('EventsIndex ' + eventsIndex);
 
         // Using filter_path is less readable and scrollSearch seems to be buggy - it
         // applies filter_path only to the first array of results, but not on the following arrays.
@@ -120,6 +126,7 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
         // The `composite` keyword skips sorting the buckets as and return results 'as is'.
         // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
         const start1 = now();
+        logger.debug('Started events query on ' + eventsIndex.name);
         const resEvents = await esClient.search({
           index: eventsIndex.name,
           size: 0,
@@ -153,7 +160,7 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
             },
           },
         });
-        elapsed(start1, 'resEvents');
+        logger.debug('Completed query of events, resEvents took ' + elapsed(start1) + 'ms');
 
         const totalCount: number = resEvents.body.aggregations.total_count.value;
         const stackTraceEvents = new Map<StackTraceID, number>();
@@ -166,10 +173,10 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
           docCount += item.doc_count;
           bucketCount++;
         });
-        console.log('took', resEvents.body.took);
-        console.log('docs', docCount);
-        console.log('total events', totalCount);
-        console.log('unique events', bucketCount);
+        logger.debug('took ' + resEvents.body.took);
+        logger.debug('docs ' + docCount);
+        logger.debug('total events ' + totalCount);
+        logger.debug('unique events ' + bucketCount);
 
         const start2 = now();
         const resStackTraces = await esClient.mget({
@@ -177,14 +184,14 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
           ids: [...stackTraceEvents.keys()],
           _source_includes: ['FrameID', 'FileID', 'Type'],
         });
-        elapsed(start2, 'resStackTraces');
+        logger.debug('Completed stacktraces mget, resStackTraces took ' + elapsed(start2) + 'ms');
 
         // Sometimes we don't find the trace.
         // This is due to ES delays writing (data is not immediately seen after write).
         // Also, ES doesn't know about transactions.
 
         // Create a lookup map StackTraceID -> StackTrace.
-        let stackTraces = new Map<StackTraceID, StackTrace>();
+        const stackTraces = new Map<StackTraceID, StackTrace>();
         for (const trace of resStackTraces.body.docs) {
           if (trace.found) {
             stackTraces.set(trace._id, {
@@ -194,7 +201,7 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
             });
           }
         }
-        console.log('unique stacktraces', stackTraces.size);
+        logger.debug('unique stacktraces ' + stackTraces.size);
 
         // Create the set of unique FrameIDs.
         const stackFrameDocIDs = new Set<string>();
@@ -203,14 +210,14 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
             stackFrameDocIDs.add(frameID);
           }
         }
-        console.log('unique frames', stackFrameDocIDs.size);
+        logger.debug('unique frames' + stackFrameDocIDs.size);
 
         const start3 = now();
         const resStackFrames = await esClient.mget({
           index: 'profiling-stackframes',
           ids: [...stackFrameDocIDs],
         });
-        elapsed(start3, 'resStackFrames');
+        logger.debug('Completed stackframes mget, resStackFrames took ' + elapsed(start3) + 'ms');
 
         // Create a lookup map StackFrameID -> StackFrame.
         const stackFrames = new Map<StackFrameID, StackFrame>();
@@ -235,7 +242,7 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
             executableDocIDs.add(fileID);
           }
         }
-        console.log('unique executable IDs', executableDocIDs.size);
+        logger.debug('unique executable IDs ' + executableDocIDs.size);
 
         const start4 = now();
         const resExecutables = await esClient.mget<any>({
@@ -243,7 +250,7 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
           ids: [...executableDocIDs],
           _source_includes: ['FileName'],
         });
-        elapsed(start4, 'resExecutables');
+        logger.debug('Completed stacktraces mget, resExecutables took ' + elapsed(start4) + 'ms');
 
         // Create a lookup map StackFrameID -> StackFrame.
         const executables = new Map<FileID, Executable>();
@@ -264,20 +271,19 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
           stackTraceEvents,
           stackTraces,
           stackFrames,
-          executables
+          executables,
+          logger
         );
 
         const ret = response.ok({
           body: flamegraph.toElastic(),
         });
-        elapsed(start5, 'Flamegraph aggregation');
-
-        elapsed(startDS, 'totalDuration');
+        logger.debug('Completed Flamegraph aggregation, took ' + elapsed(start5) + 'ms');
+        logger.debug('Completed Flamegraph, totalDuration ' + elapsed(startDS) + 'ms');
 
         return ret;
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.log('Caught', e);
+        logger.error('Caught exception when fetching Flamegraph data: ' + e.message);
         return response.customError({
           statusCode: e.statusCode ?? 500,
           body: {
@@ -288,3 +294,11 @@ export function registerFlameChartSearchRoute(router: IRouter<DataRequestHandler
     }
   );
 }
+
+const now = () => {
+  return new Date().getTime();
+};
+
+const elapsed = (start: number) => {
+  return new Date().getTime() - start;
+};
