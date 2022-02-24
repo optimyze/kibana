@@ -95,96 +95,103 @@ export function registerFlameChartSearchRoute(
         // That is in the middle of our down-sampled indexes.
         const initialExp = 6;
 
-        logger.debug('Started downsampling query');
-        const startDS = now();
-        const resp = await esClient.search({
-          index: downsampledIndex + initialExp,
-          body: {
-            query: filter,
-            size: 0,
-            track_total_hits: true,
-          },
-        });
-        const sampleCountFromInitialExp = resp.body.hits.total.value as number;
+        const eventsIndex = await logExecutionLatency(
+          logger,
+          'query to find DownsampledIndex',
+          async () => {
+            const resp = await esClient.search({
+              index: downsampledIndex + initialExp,
+              body: {
+                query: filter,
+                size: 0,
+                track_total_hits: true,
+              },
+            });
+            const sampleCountFromInitialExp = resp.body.hits.total?.value as number;
 
-        logger.debug('sampleCountFromPow6 ' + sampleCountFromInitialExp);
+            logger.info('sampleCountFromPow6 ' + sampleCountFromInitialExp);
 
-        const eventsIndex = getSampledTraceEventsIndex(
-          targetSampleSize,
-          sampleCountFromInitialExp,
-          initialExp
+            return getSampledTraceEventsIndex(
+              targetSampleSize,
+              sampleCountFromInitialExp,
+              initialExp
+            );
+          }
         );
-        logger.debug(
-          'Completed downsampling calculation, findDownsampledIndex took ' + elapsed(startDS) + 'ms'
-        );
-
-        logger.debug('EventsIndex ' + eventsIndex);
+        logger.info('EventsIndex ' + eventsIndex.name);
 
         // Using filter_path is less readable and scrollSearch seems to be buggy - it
         // applies filter_path only to the first array of results, but not on the following arrays.
         // The downside of `_source` is: it takes 2.5x more time on the ES side (see "took" field).
         // The `composite` keyword skips sorting the buckets as and return results 'as is'.
         // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
-        const start1 = now();
-        logger.debug('Started events query on ' + eventsIndex.name);
-        const resEvents = await esClient.search({
-          index: eventsIndex.name,
-          size: 0,
-          query: filter,
-          aggs: {
-            group_by: {
-              composite: {
-                size: 100000, // This is the upper limit of entries per event index.
-                sources: [
-                  {
-                    traceid: {
-                      terms: {
-                        field: 'StackTraceID',
+        const resEvents = await logExecutionLatency(
+          logger,
+          'query to find DownsampledIndex',
+          async () => {
+            return await esClient.search({
+              index: eventsIndex.name,
+              size: 0,
+              query: filter,
+              aggs: {
+                group_by: {
+                  composite: {
+                    size: 100000, // This is the upper limit of entries per event index.
+                    sources: [
+                      {
+                        traceid: {
+                          terms: {
+                            field: 'StackTraceID',
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  aggs: {
+                    sum_count: {
+                      sum: {
+                        field: 'Count',
                       },
                     },
                   },
-                ],
-              },
-              aggs: {
-                sum_count: {
+                },
+                total_count: {
                   sum: {
                     field: 'Count',
                   },
                 },
               },
-            },
-            total_count: {
-              sum: {
-                field: 'Count',
-              },
-            },
-          },
-        });
-        logger.debug('Completed query of events, resEvents took ' + elapsed(start1) + 'ms');
+            });
+          }
+        );
 
-        const totalCount: number = resEvents.body.aggregations.total_count.value;
+        const totalCount: number = resEvents.body.aggregations?.total_count.value;
         const stackTraceEvents = new Map<StackTraceID, number>();
 
         let docCount = 0;
         let bucketCount = 0;
-        resEvents.body.aggregations.group_by.buckets.forEach((item: any) => {
+        resEvents.body.aggregations?.group_by.buckets.forEach((item: any) => {
           const traceid: StackTraceID = item.key.traceid;
           stackTraceEvents.set(traceid, item.sum_count.value);
           docCount += item.doc_count;
           bucketCount++;
         });
-        logger.debug('took ' + resEvents.body.took);
-        logger.debug('docs ' + docCount);
-        logger.debug('total events ' + totalCount);
-        logger.debug('unique events ' + bucketCount);
+        logger.info('query time registered by ES on events ' + resEvents.body.took);
+        logger.info('events document count ' + docCount);
+        logger.info('total events count ' + totalCount);
+        logger.info('unique events ' + bucketCount);
 
-        const start2 = now();
-        const resStackTraces = await esClient.mget({
-          index: 'profiling-stacktraces',
-          ids: [...stackTraceEvents.keys()],
-          _source_includes: ['FrameID', 'FileID', 'Type'],
-        });
-        logger.debug('Completed stacktraces mget, resStackTraces took ' + elapsed(start2) + 'ms');
+        const resStackTraces = await logExecutionLatency(
+          logger,
+          'mget query for stacktraces',
+          async () => {
+            return await esClient.mget({
+              index: 'profiling-stacktraces',
+              ids: [...stackTraceEvents.keys()],
+              _source_includes: ['FrameID', 'FileID', 'Type'],
+            });
+          }
+        );
 
         // Sometimes we don't find the trace.
         // This is due to ES delays writing (data is not immediately seen after write).
@@ -201,7 +208,7 @@ export function registerFlameChartSearchRoute(
             });
           }
         }
-        logger.debug('unique stacktraces ' + stackTraces.size);
+        logger.info('unique stacktraces ' + stackTraces.size);
 
         // Create the set of unique FrameIDs.
         const stackFrameDocIDs = new Set<string>();
@@ -210,14 +217,18 @@ export function registerFlameChartSearchRoute(
             stackFrameDocIDs.add(frameID);
           }
         }
-        logger.debug('unique frames' + stackFrameDocIDs.size);
+        logger.info('unique frames' + stackFrameDocIDs.size);
 
-        const start3 = now();
-        const resStackFrames = await esClient.mget({
-          index: 'profiling-stackframes',
-          ids: [...stackFrameDocIDs],
-        });
-        logger.debug('Completed stackframes mget, resStackFrames took ' + elapsed(start3) + 'ms');
+        const resStackFrames = await logExecutionLatency(
+          logger,
+          'mget query for stackframes',
+          async () => {
+            return await esClient.mget({
+              index: 'profiling-stackframes',
+              ids: [...stackFrameDocIDs],
+            });
+          }
+        );
 
         // Create a lookup map StackFrameID -> StackFrame.
         const stackFrames = new Map<StackFrameID, StackFrame>();
@@ -242,15 +253,19 @@ export function registerFlameChartSearchRoute(
             executableDocIDs.add(fileID);
           }
         }
-        logger.debug('unique executable IDs ' + executableDocIDs.size);
+        logger.info('unique executable IDs ' + executableDocIDs.size);
 
-        const start4 = now();
-        const resExecutables = await esClient.mget<any>({
-          index: 'profiling-executables',
-          ids: [...executableDocIDs],
-          _source_includes: ['FileName'],
-        });
-        logger.debug('Completed stacktraces mget, resExecutables took ' + elapsed(start4) + 'ms');
+        const resExecutables = await logExecutionLatency(
+          logger,
+          'mget query for executables',
+          async () => {
+            return await esClient.mget<any>({
+              index: 'profiling-executables',
+              ids: [...executableDocIDs],
+              _source_includes: ['FileName'],
+            });
+          }
+        );
 
         // Create a lookup map StackFrameID -> StackFrame.
         const executables = new Map<FileID, Executable>();
@@ -264,24 +279,21 @@ export function registerFlameChartSearchRoute(
           }
         }
 
-        const start5 = now();
-        const flamegraph = new FlameGraph(
-          eventsIndex.sampleRate,
-          totalCount,
-          stackTraceEvents,
-          stackTraces,
-          stackFrames,
-          executables,
-          logger
-        );
-
-        const ret = response.ok({
-          body: flamegraph.toElastic(),
+        const responseBody = logExecutionLatency(logger, 'building Flamegraph data', () => {
+          return new FlameGraph(
+            eventsIndex.sampleRate,
+            totalCount,
+            stackTraceEvents,
+            stackTraces,
+            stackFrames,
+            executables,
+            logger
+          ).toElastic();
         });
-        logger.debug('Completed Flamegraph aggregation, took ' + elapsed(start5) + 'ms');
-        logger.debug('Completed Flamegraph, totalDuration ' + elapsed(startDS) + 'ms');
 
-        return ret;
+        return response.ok({
+          body: responseBody,
+        });
       } catch (e) {
         logger.error('Caught exception when fetching Flamegraph data: ' + e.message);
         return response.customError({
@@ -295,10 +307,9 @@ export function registerFlameChartSearchRoute(
   );
 }
 
-const now = () => {
-  return new Date().getTime();
-};
-
-const elapsed = (start: number) => {
-  return new Date().getTime() - start;
-};
+function logExecutionLatency<T>(logger: Logger, activity: string, func: () => T): T {
+  const start = new Date().getTime();
+  const result = func();
+  logger.info(activity + ' took ' + (new Date().getTime() - start) + 'ms');
+  return result;
+}
