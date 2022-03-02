@@ -18,6 +18,18 @@ export interface DownsampledEventsIndex {
   sampleRate: number;
 }
 
+async function logExecutionLatency<T>(
+  logger: Logger,
+  activity: string,
+  func: () => Promise<T>
+): Promise<T> {
+  const start = new Date().getTime();
+  return await func().then((res) => {
+    logger.info(activity + ' took ' + (new Date().getTime() - start) + 'ms');
+    return res;
+  });
+}
+
 const downsampledIndex = 'profiling-events-5pow';
 
 // Return the index that has between targetSampleSize..targetSampleSize*samplingFactor entries.
@@ -316,14 +328,46 @@ export function registerFlameChartElasticSearchRoute(
   );
 }
 
-async function logExecutionLatency<T>(
-  logger: Logger,
-  activity: string,
-  func: () => Promise<T>
-): Promise<T> {
-  const start = new Date().getTime();
-  return await func().then((res) => {
-    logger.info(activity + ' took ' + (new Date().getTime() - start) + 'ms');
-    return res;
-  });
+export function registerFlameChartPixiSearchRoute(
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
+) {
+  const paths = getRemoteRoutePaths();
+  router.get(
+    {
+      path: paths.FlamechartPixi,
+      validate: {
+        query: schema.object({
+          index: schema.maybe(schema.string()),
+          projectID: schema.maybe(schema.string()),
+          timeFrom: schema.maybe(schema.string()),
+          timeTo: schema.maybe(schema.string()),
+          n: schema.maybe(schema.number()),
+        }),
+      },
+    },
+    async (context, request, response) => {
+      const { projectID, timeFrom, timeTo } = request.query;
+      const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
+
+      try {
+        const esClient = context.core.elasticsearch.client.asCurrentUser;
+        const filter = newProjectTimeQuery(projectID!, timeFrom!, timeTo!);
+
+        const flamegraph = await queryFlameGraph(logger, esClient, filter, targetSampleSize);
+
+        return response.ok({
+          body: flamegraph.toPixi(),
+        });
+      } catch (e) {
+        logger.error('Caught exception when fetching Flamegraph data: ' + e.message);
+        return response.customError({
+          statusCode: e.statusCode ?? 500,
+          body: {
+            message: e.message,
+          },
+        });
+      }
+    }
+  );
 }
