@@ -164,7 +164,7 @@ async function queryFlameGraph(
     docCount += item.doc_count;
     bucketCount++;
   });
-  logger.info('query time registered by ES on events ' + resEvents.body.took);
+  logger.info('query time registered by ES on events ' + resEvents.body.took + 'ms');
   logger.info('events document count ' + docCount);
   logger.info('total events count ' + totalCount);
   logger.info('unique events ' + bucketCount);
@@ -205,7 +205,7 @@ async function queryFlameGraph(
       stackFrameDocIDs.add(frameID);
     }
   }
-  logger.info('unique frames' + stackFrameDocIDs.size);
+  logger.info('unique frames ' + stackFrameDocIDs.size);
 
   const resStackFrames = await logExecutionLatency(
     logger,
