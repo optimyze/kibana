@@ -38,6 +38,10 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart, fetchTopN
     samples: [],
     series: new Map(),
   });
+  const [topnData, setTopNData] = useState({
+    samples: [],
+    series: new Map(),
+  });
 
   const [elasticFlamegraph, setElasticFlamegraph] = useState({ leaves: [] });
   const [pixiFlamegraph, setPixiFlamegraph] = useState({});
@@ -45,13 +49,27 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart, fetchTopN
   const tabs = [
     {
       id: 'stacktrace-elastic',
-      name: 'Stack Traces (Elastic)',
+      name: 'Stack Traces (API)',
       content: (
         <>
           <EuiSpacer />
           <TopNContext.Provider value={topn}>
             <StackTraceNavigation fetchTopN={fetchTopN} setTopN={setTopN} />
             <StackedBarChart id="topn" name="topn" height={400} x="x" y="y" category="g" />
+            <ChartGrid maximum={10} />
+          </TopNContext.Provider>
+        </>
+      ),
+    },
+    {
+      id: 'stacktrace-elastic-data',
+      name: 'Stack Traces (Data Plugin)',
+      content: (
+        <>
+          <EuiSpacer />
+          <TopNContext.Provider value={topnData}>
+            <StackTraceNavigation fetchTopN={fetchTopNData} setTopN={setTopNData} />
+            <StackedBarChart id="topn-data" name="topn-data" height={400} x="x" y="y" category="g" />
             <ChartGrid maximum={10} />
           </TopNContext.Provider>
         </>

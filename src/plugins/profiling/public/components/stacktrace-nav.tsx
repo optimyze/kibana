@@ -101,13 +101,19 @@ export const StackTraceNavigation = ({ fetchTopN, setTopN }) => {
     });
 
     console.log(new Date().toISOString(), 'started payload retrieval');
-    fetchTopN(topnValue[0].value, dateValue[0].value).then((response) => {
-      console.log(new Date().toISOString(), 'finished payload retrieval');
-      const samples = getTopN(response);
-      const series = groupSamplesByCategory(samples);
-      setTopN({ samples, series });
-      console.log(new Date().toISOString(), 'updated local state');
-    });
+    fetchTopN(topnValue[0].value, dateValue[0].value)
+      .then((response) => {
+        console.log(new Date().toISOString(), 'finished payload retrieval');
+        const samples = getTopN(response);
+        const series = groupSamplesByCategory(samples);
+        console.log('sample %o', samples);
+        console.log('series %o', series);
+        setTopN({ samples, series });
+        console.log(new Date().toISOString(), 'updated local state');
+      })
+      .catch((err) => {
+        console.log('error when reading topN data: ' + err.message);
+      });
   }, [toggleTopNSelected, toggleDateSelected]);
 
   return (

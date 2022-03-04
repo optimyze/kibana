@@ -8,7 +8,11 @@
 
 import { SearchTotalHits } from '@elastic/elasticsearch/lib/api/types';
 import { IEsSearchRequest, ISearchStrategy, PluginStart } from '../../../data/server';
-import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from '../routes/mappings';
+import {
+  autoHistogramSumCountOnGroupByField,
+  newProjectTimeQuery,
+  ProjectTimeQuery,
+} from '../routes/mappings';
 import { downsampledIndex, getSampledTraceEventsIndex } from '../routes/search_flamechart';
 import { DownsampledRequest, DownsampledTopNResponse } from '../../common/types';
 
@@ -16,8 +20,37 @@ export const DownsampledTopNFactory = (
   data: PluginStart
 ): ISearchStrategy<DownsampledRequest, DownsampledTopNResponse> => {
   const es = data.search.getSearchStrategy();
+
+  // FIXME these 2 constants should be configurable?
+  const initialExp = 6;
+  const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
+
+  // Calculate the right down-sampled index to query data from
+  const sampleCountFromInitialExp = (filter: ProjectTimeQuery, options, deps): number => {
+    // By default, we return no samples and use the un-sampled index
+    let sampleCount = 0;
+    es.search(
+      {
+        params: {
+          index: downsampledIndex + initialExp,
+          body: {
+            query: filter,
+            size: 0,
+            track_total_hits: true,
+          },
+        },
+      },
+      options,
+      deps
+    ).subscribe({
+      next: (value) => {
+        sampleCount = (value.rawResponse.hits.total as SearchTotalHits).value;
+      },
+    });
+    return sampleCount;
+  };
   return {
-    search: async (request, options, deps) => {
+    search: (request, options, deps) => {
       const { projectID, timeFrom, timeTo, topNItems, searchField } = request.params!;
       const filter = newProjectTimeQuery(
         projectID.toString(),
@@ -25,30 +58,12 @@ export const DownsampledTopNFactory = (
         timeTo.toString()
       );
 
-      // FIXME these 2 constants should be configurable?
-      const initialExp = 6;
-      const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
-      // Calculate the right down-sampled index to query data from
-      const sampleCountFromInitialExp = async (): Promise<number> => {
-        return await deps.esClient.asInternalUser
-          .search({
-            index: downsampledIndex + initialExp,
-            body: {
-              query: filter,
-              size: 0,
-              track_total_hits: true,
-            },
-          })
-          .then((resp) => {
-            return (resp.body.hits?.total as SearchTotalHits).value;
-          });
-      };
       // Create the query for the actual data
       const downsampledReq = {
         params: {
           index: getSampledTraceEventsIndex(
             targetSampleSize,
-            await sampleCountFromInitialExp(),
+            sampleCountFromInitialExp(filter, options, deps),
             initialExp
           ).name,
           body: {
