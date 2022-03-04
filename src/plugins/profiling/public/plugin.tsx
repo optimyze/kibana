@@ -6,18 +6,29 @@
  * Side Public License, v 1.
  */
 
-import { AppMountParameters, CoreSetup, CoreStart, Plugin } from '../../../core/public';
+import { AppMountParameters, CoreSetup, CoreStart, Plugin } from 'kibana/public';
 import { getServices } from './services';
+import { DataPublicPluginSetup, DataPublicPluginStart } from '../../data/public';
 
-export class ProdfilerPlugin implements Plugin {
-  public setup(core: CoreSetup) {
+export interface ProdfilerPluginStartDeps {
+  data: DataPublicPluginStart;
+}
+
+export interface ProdfilerPluginSetupDeps {
+  data: DataPublicPluginSetup;
+}
+
+export class ProdfilerPlugin
+  implements Plugin<void, void, ProdfilerPluginSetupDeps, ProdfilerPluginStartDeps>
+{
+  public setup(core: CoreSetup<ProdfilerPluginStartDeps>) {
     // Register an application into the side navigation menu
     core.application.register({
       id: 'prodfiler',
       title: 'Prodfiler',
       async mount({ element }: AppMountParameters) {
-        const [coreStart] = await core.getStartServices();
-        const startServices = getServices(coreStart);
+        const [coreStart, dataPlugin] = await core.getStartServices();
+        const startServices = getServices(coreStart, dataPlugin);
         const { renderApp } = await import('./app');
         return renderApp(startServices, element);
       },
