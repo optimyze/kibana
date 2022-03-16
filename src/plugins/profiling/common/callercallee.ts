@@ -98,16 +98,43 @@ function sortRelevantTraces(relevantTraces: Map<StackTraceID, relevantTrace>): S
   });
 }
 
+// buildCallerCalleeIntermediateRoot builds a graph in the internal
+// representation from a StackFrameMetadata that identifies the "centered"
+// function and the trace results that provide traces and the number of times
+// that the trace has been seen.
+//
+// The resulting data structure contains all of the data, but is not yet in the
+// form most easily digestible by others.
 export function buildCallerCalleeIntermediateRoot(
   rootFrame: StackFrameMetadata,
   traces: Map<StackTraceID, number>,
   frames: Map<StackTraceID, StackFrameMetadata[]>
 ): CallerCalleeIntermediateNode {
+  // Create a node for the centered frame
   const root = buildCallerCalleeIntermediateNode(rootFrame, 0);
+
+  // Obtain only the relevant frames (e.g. frames that contain the root frame
+  // somewhere). If the root frame is "empty" (e.g. fileID is zero and line
+  // number is zero), all frames are deemed relevant.
   const relevantTraces = selectRelevantTraces(rootFrame, frames);
+
+  // For a deterministic result we have to walk the traces in a deterministic
+  // order. A deterministic result allows for deterministic UI views, something
+  // that users expect.
   const relevantTracesSorted = sortRelevantTraces(relevantTraces);
+
+  // Walk through all traces that contain the root. Increment the count of the
+  // root by the count of that trace. Walk "up" the trace (through the callers)
+  // and add the count of the trace to each caller. Then walk "down" the trace
+  // (through the callees) and add the count of the trace to each callee.
   for (const traceHash of relevantTracesSorted) {
     const trace = relevantTraces.get(traceHash)!;
+
+    // The slice of frames is ordered so that the leaf function is at index 0.
+    // This means that the "second part" of the slice are the callers, and the
+    // "first part" are the callees.
+    //
+    // We currently assume there are no callers.
     const callees = trace.frames;
     const samples = traces.get(traceHash)!;
 
