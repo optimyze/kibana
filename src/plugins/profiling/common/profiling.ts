@@ -20,7 +20,7 @@ export interface StackTraceEvent {
 export interface StackTrace {
   FileID: string[];
   FrameID: string[];
-  Type: string[];
+  Type: number[];
 }
 
 export type StackFrame = {

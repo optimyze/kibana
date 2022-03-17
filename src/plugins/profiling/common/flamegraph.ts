@@ -31,7 +31,7 @@ function checkIfStringHasParentheses(s: string) {
   return /\(|\)/.test(s);
 }
 
-function getFunctionName(frame: any) {
+function getFunctionName(frame: StackFrame) {
   return frame.FunctionName !== '' && !checkIfStringHasParentheses(frame.FunctionName)
     ? `${frame.FunctionName}()`
     : frame.FunctionName;
@@ -110,7 +110,7 @@ export class FlameGraph {
   // Generates the label for a flamegraph node
   //
   // This is slightly modified from the original code in elastic/prodfiler_ui
-  private getLabel(frame: any, executable: any, type: number) {
+  private getLabel(frame: StackFrame, executable: Executable, type: number) {
     if (frame.FunctionName !== '') {
       return `${this.getExeFileName(executable, type)}: ${getFunctionName(frame)} in #${
         frame.LineNumber
@@ -127,9 +127,9 @@ export class FlameGraph {
       const path = ['root'];
       for (let i = 0; i < trace.FrameID.length; i++) {
         const label = this.getLabel(
-          this.stackframes.get(trace.FrameID[i]),
-          this.executables.get(trace.FileID[i]),
-          parseInt(trace.Type[i], 10)
+          this.stackframes.get(trace.FrameID[i])!,
+          this.executables.get(trace.FileID[i])!,
+          trace.Type[i]
         );
 
         if (label.length === 0) {
