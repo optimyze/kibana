@@ -148,7 +148,7 @@ export function buildCallerCalleeIntermediateRoot(
         node = buildCallerCalleeIntermediateNode(callee, samples);
         currentNode.callees.set(calleeName, node);
       } else {
-        node.samples = samples;
+        node.samples += samples;
       }
       currentNode = node;
     }
