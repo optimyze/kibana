@@ -87,7 +87,7 @@ function selectRelevantTraces(
 }
 
 function sortRelevantTraces(relevantTraces: Map<StackTraceID, relevantTrace>): StackTraceID[] {
-  const sortedRelevantTraces: StackTraceID[] = new Array(relevantTraces.size);
+  const sortedRelevantTraces = new Array<StackTraceID>();
   for (const trace of relevantTraces.keys()) {
     sortedRelevantTraces.push(trace);
   }
@@ -220,7 +220,7 @@ function selectCallerCalleeData(frameMetadata: Set<StackFrameMetadata>, node: Ca
 function sortNodes(
   nodes: Map<FrameGroupID, CallerCalleeIntermediateNode>
 ): CallerCalleeIntermediateNode[] {
-  const sortedNodes: CallerCalleeIntermediateNode[] = new Array(nodes.size);
+  const sortedNodes = new Array<CallerCalleeIntermediateNode>();
   for (const node of nodes.values()) {
     sortedNodes.push(node);
   }
