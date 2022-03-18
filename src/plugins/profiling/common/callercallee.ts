@@ -26,18 +26,16 @@ export interface CallerCalleeIntermediateNode {
 }
 
 export function buildCallerCalleeIntermediateNode(
-  frame: StackFrameMetadata,
+  frameMetadata: StackFrameMetadata,
   samples: number
 ): CallerCalleeIntermediateNode {
-  let node: CallerCalleeIntermediateNode = {
-    frameGroup: defaultGroupBy(frame),
+  return {
+    frameGroup: defaultGroupBy(frameMetadata),
     callers: new Map<FrameGroupID, CallerCalleeIntermediateNode>(),
     callees: new Map<FrameGroupID, CallerCalleeIntermediateNode>(),
-    frameMetadata: new Set<StackFrameMetadata>(),
+    frameMetadata: new Set<StackFrameMetadata>([frameMetadata]),
     samples: samples,
   };
-  node.frameMetadata.add(frame);
-  return node;
 }
 
 interface relevantTrace {
