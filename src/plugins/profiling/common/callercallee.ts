@@ -8,17 +8,17 @@
 
 import { override } from '.';
 import {
-  buildFrameGroup,
   compareFrameGroup,
   defaultGroupBy,
   FrameGroup,
   FrameGroupID,
+  hashFrameGroup,
   StackFrameMetadata,
   StackTraceID,
 } from './profiling';
 
 export interface CallerCalleeIntermediateNode {
-  nodeID: FrameGroup;
+  frameGroup: FrameGroup;
   callers: Map<FrameGroupID, CallerCalleeIntermediateNode>;
   callees: Map<FrameGroupID, CallerCalleeIntermediateNode>;
   frameMetadata: Set<StackFrameMetadata>;
@@ -30,7 +30,7 @@ export function buildCallerCalleeIntermediateNode(
   samples: number
 ): CallerCalleeIntermediateNode {
   let node: CallerCalleeIntermediateNode = {
-    nodeID: buildFrameGroup(),
+    frameGroup: defaultGroupBy(frame),
     callers: new Map<FrameGroupID, CallerCalleeIntermediateNode>(),
     callees: new Map<FrameGroupID, CallerCalleeIntermediateNode>(),
     frameMetadata: new Set<StackFrameMetadata>(),
@@ -59,7 +59,7 @@ function selectRelevantTraces(
   frames: Map<StackTraceID, StackFrameMetadata[]>
 ): Map<StackTraceID, relevantTrace> {
   const result = new Map<StackTraceID, relevantTrace>();
-  const rootString = defaultGroupBy(rootFrame);
+  const rootString = hashFrameGroup(defaultGroupBy(rootFrame));
   for (const [stackTraceID, frameMetadata] of frames) {
     if (rootFrame.FileID === '' && rootFrame.AddressOrLine === 0) {
       // If the root frame is empty, every trace is relevant, and all elements
@@ -74,7 +74,7 @@ function selectRelevantTraces(
       // Search for the right index of the root frame in the frameMetadata, and
       // set it in the result.
       for (let i = 0; i < frameMetadata.length; i++) {
-        if (rootString === defaultGroupBy(frameMetadata[i])) {
+        if (rootString === hashFrameGroup(defaultGroupBy(frameMetadata[i]))) {
           result.set(stackTraceID, {
             frames: frameMetadata,
             index: i,
@@ -142,7 +142,7 @@ export function buildCallerCalleeIntermediateRoot(
     let currentNode = root;
     for (let i = callees.length - 1; i >= 0; i--) {
       const callee = callees[i];
-      const calleeName = defaultGroupBy(callee);
+      const calleeName = hashFrameGroup(defaultGroupBy(callee));
       let node = currentNode.callees.get(calleeName);
       if (node === undefined) {
         node = buildCallerCalleeIntermediateNode(callee, samples);
@@ -225,7 +225,7 @@ function sortNodes(
     sortedNodes.push(node);
   }
   return sortedNodes.sort((n1, n2) => {
-    return compareFrameGroup(n1.nodeID, n2.nodeID);
+    return compareFrameGroup(n1.frameGroup, n2.frameGroup);
   });
 }
 

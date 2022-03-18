@@ -152,15 +152,13 @@ export function compareFrameGroup(a: FrameGroup, b: FrameGroup): number {
   return 0;
 }
 
-export type FrameGroupID = string;
-
 // defaultGroupBy is the "standard" way of grouping frames, by commonly
 // shared group identifiers.
 //
 // For ELF-symbolized frames, group by FunctionName and FileID.
 // For non-symbolized frames, group by FileID and AddressOrLine.
 // Otherwise group by ExeFileName, SourceFilename and FunctionName.
-export function defaultGroupBy(frame: StackFrameMetadata): FrameGroupID {
+export function defaultGroupBy(frame: StackFrameMetadata): FrameGroup {
   const frameGroup = buildFrameGroup();
 
   if (frame.FunctionName === '') {
@@ -178,6 +176,12 @@ export function defaultGroupBy(frame: StackFrameMetadata): FrameGroupID {
     frameGroup.FunctionName = frame.FunctionName;
   }
 
-  // We serialize to JSON string to use FrameGroup as a key
+  return frameGroup;
+}
+
+export type FrameGroupID = string;
+
+export function hashFrameGroup(frameGroup: FrameGroup): FrameGroupID {
+  // We use serialized JSON as the unique value of a frame group for now
   return JSON.stringify(frameGroup);
 }

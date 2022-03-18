@@ -11,6 +11,7 @@ import {
   buildStackFrameMetadata,
   compareFrameGroup,
   defaultGroupBy,
+  hashFrameGroup,
 } from './profiling';
 
 describe('Frame group operations', () => {
@@ -37,7 +38,7 @@ describe('Frame group operations', () => {
       FileID: '0x0123456789ABCDEF',
       AddressOrLine: 102938,
     });
-    expect(defaultGroupBy(metadata)).toEqual(
+    expect(hashFrameGroup(defaultGroupBy(metadata))).toEqual(
       '{"FileID":"0x0123456789ABCDEF","ExeFileName":"","FunctionName":"","AddressOrLine":102938,"SourceFilename":""}'
     );
   });
@@ -47,7 +48,7 @@ describe('Frame group operations', () => {
       FunctionName: 'strlen()',
       FileID: '0x0123456789ABCDEF',
     });
-    expect(defaultGroupBy(metadata)).toEqual(
+    expect(hashFrameGroup(defaultGroupBy(metadata))).toEqual(
       '{"FileID":"0x0123456789ABCDEF","ExeFileName":"","FunctionName":"strlen()","AddressOrLine":0,"SourceFilename":""}'
     );
   });
@@ -58,7 +59,7 @@ describe('Frame group operations', () => {
       SourceFilename: 'strlen()',
       FunctionName: 'strlen()',
     });
-    expect(defaultGroupBy(metadata)).toEqual(
+    expect(hashFrameGroup(defaultGroupBy(metadata))).toEqual(
       '{"FileID":"","ExeFileName":"chrome","FunctionName":"strlen()","AddressOrLine":0,"SourceFilename":"strlen()"}'
     );
   });
