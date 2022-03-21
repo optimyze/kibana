@@ -6,8 +6,6 @@
  * Side Public License, v 1.
  */
 
-import { override } from '.';
-
 export type StackTraceID = string;
 export type StackFrameID = string;
 export type FileID = string;
@@ -88,35 +86,30 @@ export type StackFrameMetadata = {
   Index: number;
 };
 
-const defaultStackFrameMetadata: StackFrameMetadata = {
-  FileID: '',
-  FrameType: 0,
-  FrameTypeString: '',
-
-  AddressOrLine: 0,
-  FunctionName: '',
-  FunctionOffset: 0,
-  SourceID: '',
-  SourceLine: 0,
-
-  FunctionLine: 0,
-
-  ExeFileName: '',
-
-  CommitHash: '',
-  SourceCodeURL: '',
-  SourceFilename: '',
-  SourcePackageHash: '',
-  SourcePackageURL: '',
-  SourceType: 0,
-
-  Index: 0,
-};
-
 export function buildStackFrameMetadata(
-  metadata: Partial<StackFrameMetadata> = {}
+  partial: Partial<StackFrameMetadata> = {}
 ): StackFrameMetadata {
-  return override(defaultStackFrameMetadata, metadata);
+  const metadata = {} as StackFrameMetadata;
+
+  metadata.FileID = partial.FileID ?? '';
+  metadata.FrameType = partial.FrameType ?? 0;
+  metadata.FrameTypeString = partial.FrameTypeString ?? '';
+  metadata.AddressOrLine = partial.AddressOrLine ?? 0;
+  metadata.FunctionName = partial.FunctionName ?? '';
+  metadata.FunctionOffset = partial.FunctionOffset ?? 0;
+  metadata.SourceID = partial.SourceID ?? '';
+  metadata.SourceLine = partial.SourceLine ?? 0;
+  metadata.FunctionLine = partial.FunctionLine ?? 0;
+  metadata.ExeFileName = partial.ExeFileName ?? '';
+  metadata.CommitHash = partial.CommitHash ?? '';
+  metadata.SourceCodeURL = partial.SourceCodeURL ?? '';
+  metadata.SourceFilename = partial.SourceFilename ?? '';
+  metadata.SourcePackageHash = partial.SourcePackageHash ?? '';
+  metadata.SourcePackageURL = partial.SourcePackageURL ?? '';
+  metadata.SourceType = partial.SourceType ?? 0;
+  metadata.Index = partial.Index ?? 0;
+
+  return metadata;
 }
 
 export type FrameGroup = Pick<
@@ -124,18 +117,18 @@ export type FrameGroup = Pick<
   'FileID' | 'ExeFileName' | 'FunctionName' | 'AddressOrLine' | 'SourceFilename'
 >;
 
-const defaultFrameGroup: FrameGroup = {
-  FileID: '',
-  ExeFileName: '',
-  FunctionName: '',
-  AddressOrLine: 0,
-  SourceFilename: '',
-};
-
 // This is a convenience function to build a FrameGroup value with
 // defaults for missing fields
-export function buildFrameGroup(frameGroup: Partial<FrameGroup> = {}): FrameGroup {
-  return override(defaultFrameGroup, frameGroup);
+export function buildFrameGroup(partial: Partial<FrameGroup> = {}): FrameGroup {
+  const frameGroup = {} as FrameGroup;
+
+  frameGroup.FileID = partial.FileID ?? '';
+  frameGroup.ExeFileName = partial.ExeFileName ?? '';
+  frameGroup.FunctionName = partial.FunctionName ?? '';
+  frameGroup.AddressOrLine = partial.AddressOrLine ?? 0;
+  frameGroup.SourceFilename = partial.SourceFilename ?? '';
+
+  return frameGroup;
 }
 
 export function compareFrameGroup(a: FrameGroup, b: FrameGroup): number {
