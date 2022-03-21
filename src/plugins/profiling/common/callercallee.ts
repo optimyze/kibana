@@ -6,7 +6,8 @@
  * Side Public License, v 1.
  */
 
-import { override } from '.';
+import { clone } from 'lodash';
+
 import {
   compareFrameGroup,
   defaultGroupBy,
@@ -175,25 +176,25 @@ export interface CallerCalleeNode {
   Samples: number;
 }
 
-const defaultCallerCalleeNode: CallerCalleeNode = {
-  Callers: [],
-  Callees: [],
-  FileID: '',
-  FrameType: 0,
-  ExeFileName: '',
-  FunctionID: '',
-  FunctionName: '',
-  AddressOrLine: 0,
-  FunctionSourceLine: 0,
-  FunctionSourceID: '',
-  FunctionSourceURL: '',
-  SourceFilename: '',
-  SourceLine: 0,
-  Samples: 0,
-};
+export function buildCallerCalleeNode(partial: Partial<CallerCalleeNode> = {}): CallerCalleeNode {
+  const node = {} as CallerCalleeNode;
 
-export function buildCallerCalleeNode(node: Partial<CallerCalleeNode> = {}): CallerCalleeNode {
-  return override(defaultCallerCalleeNode, node);
+  node.Callers = clone(partial.Callers ?? []);
+  node.Callees = clone(partial.Callees ?? []);
+  node.FileID = partial.FileID ?? '';
+  node.FrameType = partial.FrameType ?? 0;
+  node.ExeFileName = partial.ExeFileName ?? '';
+  node.FunctionID = partial.FunctionID ?? '';
+  node.FunctionName = partial.FunctionName ?? '';
+  node.AddressOrLine = partial.AddressOrLine ?? 0;
+  node.FunctionSourceLine = partial.FunctionSourceLine ?? 0;
+  node.FunctionSourceID = partial.FunctionSourceID ?? '';
+  node.FunctionSourceURL = partial.FunctionSourceURL ?? '';
+  node.SourceFilename = partial.SourceFilename ?? '';
+  node.SourceLine = partial.SourceLine ?? 0;
+  node.Samples = partial.Samples ?? 0;
+
+  return node;
 }
 
 // selectCallerCalleeData is the "standard" way of merging multiple frames into
@@ -220,7 +221,7 @@ function sortNodes(
 ): CallerCalleeIntermediateNode[] {
   const sortedNodes = new Array<CallerCalleeIntermediateNode>();
   for (const node of nodes.values()) {
-    sortedNodes.push(node);
+    sortedNodes.push(clone(node));
   }
   return sortedNodes.sort((n1, n2) => {
     return compareFrameGroup(n1.frameGroup, n2.frameGroup);
