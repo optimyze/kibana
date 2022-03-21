@@ -158,7 +158,6 @@ export function buildCallerCalleeIntermediateRoot(
 export interface CallerCalleeNode {
   Callers: CallerCalleeNode[];
   Callees: CallerCalleeNode[];
-
   FileID: string;
   FrameType: number;
   ExeFileName: string;
@@ -166,13 +165,10 @@ export interface CallerCalleeNode {
   FunctionName: string;
   AddressOrLine: number;
   FunctionSourceLine: number;
-
-  // symbolization fields - currently unused
   FunctionSourceID: string;
   FunctionSourceURL: string;
   SourceFilename: string;
   SourceLine: number;
-
   Samples: number;
 }
 
@@ -201,17 +197,17 @@ export function buildCallerCalleeNode(partial: Partial<CallerCalleeNode> = {}): 
 // one node. It simply takes the data from the first frame.
 function selectCallerCalleeData(frameMetadata: Set<StackFrameMetadata>, node: CallerCalleeNode) {
   for (const metadata of frameMetadata) {
+    node.FileID = metadata.FileID;
+    node.FrameType = metadata.FrameType;
     node.ExeFileName = metadata.ExeFileName;
     node.FunctionID = metadata.FunctionName;
     node.FunctionName = metadata.FunctionName;
+    node.AddressOrLine = metadata.AddressOrLine;
+    node.FunctionSourceLine = metadata.FunctionLine;
     node.FunctionSourceID = metadata.SourceID;
     node.FunctionSourceURL = metadata.SourceCodeURL;
-    node.FunctionSourceLine = metadata.FunctionLine;
-    node.SourceLine = metadata.SourceLine;
-    node.FrameType = metadata.FrameType;
     node.SourceFilename = metadata.SourceFilename;
-    node.FileID = metadata.FileID;
-    node.AddressOrLine = metadata.AddressOrLine;
+    node.SourceLine = metadata.SourceLine;
     break;
   }
 }
