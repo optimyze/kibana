@@ -10,16 +10,16 @@ export type StackTraceID = string;
 export type StackFrameID = string;
 export type FileID = string;
 
-export interface StackTraceEvent {
+export type StackTraceEvent = {
   StackTraceID: StackTraceID;
   Count: number;
-}
+};
 
-export interface StackTrace {
+export type StackTrace = {
   FileID: string[];
   FrameID: string[];
   Type: number[];
-}
+};
 
 export type StackFrame = {
   FileName: string;
@@ -29,9 +29,9 @@ export type StackFrame = {
   SourceType: number;
 };
 
-export interface Executable {
+export type Executable = {
   FileName: string;
-}
+};
 
 export type StackFrameMetadata = {
   // StackTrace.FileID

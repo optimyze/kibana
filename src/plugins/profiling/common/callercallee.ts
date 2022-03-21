@@ -18,13 +18,13 @@ import {
   StackTraceID,
 } from './profiling';
 
-export interface CallerCalleeIntermediateNode {
+export type CallerCalleeIntermediateNode = {
   frameGroup: FrameGroup;
   callers: Map<FrameGroupID, CallerCalleeIntermediateNode>;
   callees: Map<FrameGroupID, CallerCalleeIntermediateNode>;
   frameMetadata: Set<StackFrameMetadata>;
   samples: number;
-}
+};
 
 export function buildCallerCalleeIntermediateNode(
   frameMetadata: StackFrameMetadata,
@@ -39,10 +39,10 @@ export function buildCallerCalleeIntermediateNode(
   };
 }
 
-interface relevantTrace {
+type relevantTrace = {
   frames: StackFrameMetadata[];
   index: number;
-}
+};
 
 // selectRelevantTraces searches through a map that maps trace hashes to their
 // frames and only returns those traces that have a frame that are equivalent
@@ -155,7 +155,7 @@ export function buildCallerCalleeIntermediateRoot(
   return root;
 }
 
-export interface CallerCalleeNode {
+export type CallerCalleeNode = {
   Callers: CallerCalleeNode[];
   Callees: CallerCalleeNode[];
   FileID: string;
@@ -170,7 +170,7 @@ export interface CallerCalleeNode {
   SourceFilename: string;
   SourceLine: number;
   Samples: number;
-}
+};
 
 export function buildCallerCalleeNode(partial: Partial<CallerCalleeNode> = {}): CallerCalleeNode {
   const node = {} as CallerCalleeNode;
