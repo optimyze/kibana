@@ -52,21 +52,6 @@ export type StackFrameMetadata = {
   // StackFrame.LineNumber
   SourceLine: number;
 
-  // value defined by:
-  //   if StackFrame.FunctionOffset > 0:
-  //     StackFrame.LineNumber - StackFrame.FunctionOffset
-  //   else:
-  //     0
-  //
-  // Unknown/invalid offsets are currently set to 0.
-  //
-  // In this case we leave FunctionLine=0 as a flag for the UI that the
-  // FunctionLine should not be displayed.
-  //
-  // As offset=0 could also be a legit value, this work-around needs a real fix.
-  // The idea for after GA is to change offset=-1 to indicate unknown/invalid.
-  FunctionLine: number;
-
   // Executable.FileName
   ExeFileName: string;
 
@@ -99,7 +84,6 @@ export function buildStackFrameMetadata(
   metadata.FunctionOffset = partial.FunctionOffset ?? 0;
   metadata.SourceID = partial.SourceID ?? '';
   metadata.SourceLine = partial.SourceLine ?? 0;
-  metadata.FunctionLine = partial.FunctionLine ?? 0;
   metadata.ExeFileName = partial.ExeFileName ?? '';
   metadata.CommitHash = partial.CommitHash ?? '';
   metadata.SourceCodeURL = partial.SourceCodeURL ?? '';

@@ -203,7 +203,21 @@ function selectCallerCalleeData(frameMetadata: Set<StackFrameMetadata>, node: Ca
     node.FunctionID = metadata.FunctionName;
     node.FunctionName = metadata.FunctionName;
     node.AddressOrLine = metadata.AddressOrLine;
-    node.FunctionSourceLine = metadata.FunctionLine;
+
+    // Unknown/invalid offsets are currently set to 0.
+    //
+    // In this case we leave FunctionSourceLine=0 as a flag for the UI that the
+    // FunctionSourceLine should not be displayed.
+    //
+    // As FunctionOffset=0 could also be a legit value, this work-around needs
+    // a real fix. The idea for after GA is to change FunctionOffset=-1 to
+    // indicate unknown/invalid.
+    if (metadata.FunctionOffset > 0) {
+      node.FunctionSourceLine = metadata.SourceLine - metadata.FunctionOffset;
+    } else {
+      node.FunctionSourceLine = 0;
+    }
+
     node.FunctionSourceID = metadata.SourceID;
     node.FunctionSourceURL = metadata.SourceCodeURL;
     node.SourceFilename = metadata.SourceFilename;
