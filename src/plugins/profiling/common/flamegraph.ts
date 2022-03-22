@@ -85,7 +85,7 @@ export class FlameGraph {
       const frameMetadata = new Array<StackFrameMetadata>();
       for (let i = 0; i < trace.FrameID.length; i++) {
         const metadata = buildStackFrameMetadata({ Index: i });
-        metadata.FileID = trace.FileID[i];
+        metadata.FileID = Buffer.from(trace.FileID[i], 'base64url').toString('hex');
         metadata.FrameType = trace.Type[i];
 
         const frame = this.stackframes.get(trace.FrameID[i])!;
