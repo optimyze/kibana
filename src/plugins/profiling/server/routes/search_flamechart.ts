@@ -158,6 +158,93 @@ function getNumberOfUniqueStacktracesWithoutLeafNode(
   return stackTracesNoLeaf.size;
 }
 
+function getStackTraceEvents(
+  logger: Logger,
+  client: ElasticsearchClient,
+  index: string,
+  filter: ProjectTimeQuery,
+  sampleSize: number
+): [Map<StackTraceID, number>, number] {
+  const stackTraceEvents = new Map<StackTraceID, number>();
+  let afterKey;
+  let totalCount = 0;
+
+  for (let i = 0; i < 2; i++) {
+    // Using filter_path is less readable and scrollSearch seems to be buggy - it
+    // applies filter_path only to the first array of results, but not on the following arrays.
+    // The downside of `_source` is: it takes 2.5x more time on the ES side (see "took" field).
+    // The `composite` keyword skips sorting the buckets as and return results 'as is'.
+    // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
+    logger.info('after = ' + JSON.stringify(afterKey));
+    logger.info('index = ' + index);
+    logger.info('filter = ' + JSON.stringify(filter));
+    const resEvents = logExecutionLatency(
+      logger,
+      'query to fetch events from ' + index,
+      async () => {
+        return await client.search({
+          index,
+          size: 0,
+          query: filter,
+          aggs: {
+            group_by: {
+              composite: {
+                ...(afterKey ? { after: afterKey } : {}),
+                size: 50000, // This is the upper limit of entries per event index.
+                sources: [
+                  {
+                    traceid: {
+                      terms: {
+                        field: 'StackTraceID',
+                      },
+                    },
+                  },
+                ],
+              },
+              aggs: {
+                sum_count: {
+                  sum: {
+                    field: 'Count',
+                  },
+                },
+              },
+            },
+            total_count: {
+              sum: {
+                field: 'Count',
+              },
+            },
+          },
+        });
+      }
+    );
+
+    logger.info('resEvents = ' + JSON.stringify(resEvents, null, 2));
+
+    afterKey = resEvents.body.aggregations?.group_by.after_key;
+    totalCount = resEvents.body.aggregations?.total_count.value;
+
+    resEvents.body.aggregations?.group_by.buckets.forEach((item: any) => {
+      const traceid: StackTraceID = item.key.traceid;
+      stackTraceEvents.set(traceid, item.sum_count.value);
+    });
+  }
+
+  logger.info('events total count: ' + totalCount);
+  logger.info('unique stacktraces: ' + stackTraceEvents.size);
+
+  // Manual downsampling if totalCount exceeds sampleSize by 10%.
+  if (totalCount > sampleSize * 1.1) {
+    const p = sampleSize / totalCount;
+    logger.info('downsampling events with p=' + p);
+    totalCount = downsampleEventsRandomly(stackTraceEvents, p, filter.toString());
+    logger.info('downsampled total count: ' + totalCount);
+    logger.info('unique downsampled stacktraces: ' + stackTraceEvents.size);
+  }
+
+  return [stackTraceEvents, totalCount];
+}
+
 async function queryFlameGraph(
   logger: Logger,
   client: ElasticsearchClient,
@@ -195,69 +282,13 @@ async function queryFlameGraph(
     }
   );
 
-  // Using filter_path is less readable and scrollSearch seems to be buggy - it
-  // applies filter_path only to the first array of results, but not on the following arrays.
-  // The downside of `_source` is: it takes 2.5x more time on the ES side (see "took" field).
-  // The `composite` keyword skips sorting the buckets as and return results 'as is'.
-  // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
-  const resEvents = await logExecutionLatency(
+  const [stackTraceEvents, totalCount] = getStackTraceEvents(
     logger,
-    'query to fetch events from ' + eventsIndex.name,
-    async () => {
-      return await client.search({
-        index: eventsIndex.name,
-        size: 0,
-        query: filter,
-        aggs: {
-          group_by: {
-            composite: {
-              size: 100000, // This is the upper limit of entries per event index.
-              sources: [
-                {
-                  traceid: {
-                    terms: {
-                      field: 'StackTraceID',
-                    },
-                  },
-                },
-              ],
-            },
-            aggs: {
-              sum_count: {
-                sum: {
-                  field: 'Count',
-                },
-              },
-            },
-          },
-          total_count: {
-            sum: {
-              field: 'Count',
-            },
-          },
-        },
-      });
-    }
+    client,
+    eventsIndex.name,
+    filter,
+    sampleSize
   );
-
-  let totalCount: number = resEvents.body.aggregations?.total_count.value;
-
-  const stackTraceEvents = new Map<StackTraceID, number>();
-  resEvents.body.aggregations?.group_by.buckets.forEach((item: any) => {
-    const traceid: StackTraceID = item.key.traceid;
-    stackTraceEvents.set(traceid, item.sum_count.value);
-  });
-  logger.info('events total count: ' + totalCount);
-  logger.info('unique stacktraces: ' + stackTraceEvents.size);
-
-  // Manual downsampling if totalCount exceeds sampleSize by 10%.
-  if (totalCount > sampleSize * 1.1) {
-    const p = sampleSize / totalCount;
-    logger.info('downsampling events with p=' + p);
-    totalCount = downsampleEventsRandomly(stackTraceEvents, p, filter.toString());
-    logger.info('downsampled total count: ' + totalCount);
-    logger.info('unique downsampled stacktraces: ' + stackTraceEvents.size);
-  }
 
   const resStackTraces = await logExecutionLatency(
     logger,
