@@ -138,7 +138,8 @@ export function buildCallerCalleeIntermediateRoot(
     const samples = traces.get(traceHash)!;
 
     // Go through the callees, reverse iteration
-    let currentNode = root;
+    let currentNode = clone(root);
+    root.samples += samples;
     for (let i = callees.length - 1; i >= 0; i--) {
       const callee = callees[i];
       const calleeName = hashFrameGroup(defaultGroupBy(callee));
