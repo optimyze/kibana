@@ -71,27 +71,27 @@ export type StackFrameMetadata = {
   Index: number;
 };
 
-export function buildStackFrameMetadata(
-  partial: Partial<StackFrameMetadata> = {}
+export function createStackFrameMetadata(
+  options: Partial<StackFrameMetadata> = {}
 ): StackFrameMetadata {
   const metadata = {} as StackFrameMetadata;
 
-  metadata.FileID = partial.FileID ?? '';
-  metadata.FrameType = partial.FrameType ?? 0;
-  metadata.FrameTypeString = partial.FrameTypeString ?? '';
-  metadata.AddressOrLine = partial.AddressOrLine ?? 0;
-  metadata.FunctionName = partial.FunctionName ?? '';
-  metadata.FunctionOffset = partial.FunctionOffset ?? 0;
-  metadata.SourceID = partial.SourceID ?? '';
-  metadata.SourceLine = partial.SourceLine ?? 0;
-  metadata.ExeFileName = partial.ExeFileName ?? '';
-  metadata.CommitHash = partial.CommitHash ?? '';
-  metadata.SourceCodeURL = partial.SourceCodeURL ?? '';
-  metadata.SourceFilename = partial.SourceFilename ?? '';
-  metadata.SourcePackageHash = partial.SourcePackageHash ?? '';
-  metadata.SourcePackageURL = partial.SourcePackageURL ?? '';
-  metadata.SourceType = partial.SourceType ?? 0;
-  metadata.Index = partial.Index ?? 0;
+  metadata.FileID = options.FileID ?? '';
+  metadata.FrameType = options.FrameType ?? 0;
+  metadata.FrameTypeString = options.FrameTypeString ?? '';
+  metadata.AddressOrLine = options.AddressOrLine ?? 0;
+  metadata.FunctionName = options.FunctionName ?? '';
+  metadata.FunctionOffset = options.FunctionOffset ?? 0;
+  metadata.SourceID = options.SourceID ?? '';
+  metadata.SourceLine = options.SourceLine ?? 0;
+  metadata.ExeFileName = options.ExeFileName ?? '';
+  metadata.CommitHash = options.CommitHash ?? '';
+  metadata.SourceCodeURL = options.SourceCodeURL ?? '';
+  metadata.SourceFilename = options.SourceFilename ?? '';
+  metadata.SourcePackageHash = options.SourcePackageHash ?? '';
+  metadata.SourcePackageURL = options.SourcePackageURL ?? '';
+  metadata.SourceType = options.SourceType ?? 0;
+  metadata.Index = options.Index ?? 0;
 
   return metadata;
 }
@@ -101,16 +101,16 @@ export type FrameGroup = Pick<
   'FileID' | 'ExeFileName' | 'FunctionName' | 'AddressOrLine' | 'SourceFilename'
 >;
 
-// This is a convenience function to build a FrameGroup value with
+// This is a convenience function to create a FrameGroup value with
 // defaults for missing fields
-export function buildFrameGroup(partial: Partial<FrameGroup> = {}): FrameGroup {
+export function createFrameGroup(options: Partial<FrameGroup> = {}): FrameGroup {
   const frameGroup = {} as FrameGroup;
 
-  frameGroup.FileID = partial.FileID ?? '';
-  frameGroup.ExeFileName = partial.ExeFileName ?? '';
-  frameGroup.FunctionName = partial.FunctionName ?? '';
-  frameGroup.AddressOrLine = partial.AddressOrLine ?? 0;
-  frameGroup.SourceFilename = partial.SourceFilename ?? '';
+  frameGroup.FileID = options.FileID ?? '';
+  frameGroup.ExeFileName = options.ExeFileName ?? '';
+  frameGroup.FunctionName = options.FunctionName ?? '';
+  frameGroup.AddressOrLine = options.AddressOrLine ?? 0;
+  frameGroup.SourceFilename = options.SourceFilename ?? '';
 
   return frameGroup;
 }
@@ -136,7 +136,7 @@ export function compareFrameGroup(a: FrameGroup, b: FrameGroup): number {
 // For non-symbolized frames, group by FileID and AddressOrLine.
 // Otherwise group by ExeFileName, SourceFilename and FunctionName.
 export function defaultGroupBy(frame: StackFrameMetadata): FrameGroup {
-  const frameGroup = buildFrameGroup();
+  const frameGroup = createFrameGroup();
 
   if (frame.FunctionName === '') {
     // Non-symbolized frame where we only have FileID and AddressOrLine

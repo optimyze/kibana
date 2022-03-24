@@ -7,8 +7,8 @@
  */
 
 import {
-  buildFrameGroup,
-  buildStackFrameMetadata,
+  createFrameGroup,
+  createStackFrameMetadata,
   compareFrameGroup,
   defaultGroupBy,
   hashFrameGroup,
@@ -16,25 +16,25 @@ import {
 
 describe('Frame group operations', () => {
   test('check if a frame group is less than another', () => {
-    const a = buildFrameGroup({ ExeFileName: 'chrome' });
-    const b = buildFrameGroup({ ExeFileName: 'dockerd' });
+    const a = createFrameGroup({ ExeFileName: 'chrome' });
+    const b = createFrameGroup({ ExeFileName: 'dockerd' });
     expect(compareFrameGroup(a, b)).toEqual(-1);
   });
 
   test('check if a frame group is greater than another', () => {
-    const a = buildFrameGroup({ ExeFileName: 'oom_reaper' });
-    const b = buildFrameGroup({ ExeFileName: 'dockerd' });
+    const a = createFrameGroup({ ExeFileName: 'oom_reaper' });
+    const b = createFrameGroup({ ExeFileName: 'dockerd' });
     expect(compareFrameGroup(a, b)).toEqual(1);
   });
 
   test('check if frame groups are equal', () => {
-    const a = buildFrameGroup({ AddressOrLine: 1234 });
-    const b = buildFrameGroup({ AddressOrLine: 1234 });
+    const a = createFrameGroup({ AddressOrLine: 1234 });
+    const b = createFrameGroup({ AddressOrLine: 1234 });
     expect(compareFrameGroup(a, b)).toEqual(0);
   });
 
   test('check serialized non-symbolized frame', () => {
-    const metadata = buildStackFrameMetadata({
+    const metadata = createStackFrameMetadata({
       FileID: '0x0123456789ABCDEF',
       AddressOrLine: 102938,
     });
@@ -44,7 +44,7 @@ describe('Frame group operations', () => {
   });
 
   test('check serialized non-symbolized ELF frame', () => {
-    const metadata = buildStackFrameMetadata({
+    const metadata = createStackFrameMetadata({
       FunctionName: 'strlen()',
       FileID: '0x0123456789ABCDEF',
     });
@@ -54,7 +54,7 @@ describe('Frame group operations', () => {
   });
 
   test('check serialized symbolized frame', () => {
-    const metadata = buildStackFrameMetadata({
+    const metadata = createStackFrameMetadata({
       ExeFileName: 'chrome',
       SourceFilename: 'strlen()',
       FunctionName: 'strlen()',

@@ -7,8 +7,8 @@
  */
 import { Logger } from 'kibana/server';
 import {
-  buildCallerCalleeIntermediateRoot,
   CallerCalleeNode,
+  createCallerCalleeIntermediateRoot,
   fromCallerCalleeIntermediateNode,
 } from './callercallee';
 import {
@@ -18,7 +18,7 @@ import {
   StackTrace,
   StackFrame,
   Executable,
-  buildStackFrameMetadata,
+  createStackFrameMetadata,
   StackFrameMetadata,
 } from './profiling';
 
@@ -84,7 +84,7 @@ export class FlameGraph {
     for (const [stackTraceID, trace] of this.stacktraces) {
       const frameMetadata = new Array<StackFrameMetadata>();
       for (let i = 0; i < trace.FrameID.length; i++) {
-        const metadata = buildStackFrameMetadata({ Index: i });
+        const metadata = createStackFrameMetadata({ Index: i });
         metadata.FileID = Buffer.from(trace.FileID[i], 'base64url').toString('hex');
         metadata.FrameType = trace.Type[i];
 
@@ -186,9 +186,9 @@ export class FlameGraph {
   }
 
   toPixi(): PixiFlameGraph {
-    const rootFrame = buildStackFrameMetadata();
+    const rootFrame = createStackFrameMetadata();
     const frameMetadataForTraces = this.getFrameMetadataForTraces();
-    const diagram = buildCallerCalleeIntermediateRoot(
+    const diagram = createCallerCalleeIntermediateRoot(
       rootFrame,
       this.events,
       frameMetadataForTraces

@@ -26,7 +26,7 @@ export type CallerCalleeIntermediateNode = {
   samples: number;
 };
 
-export function buildCallerCalleeIntermediateNode(
+export function createCallerCalleeIntermediateNode(
   frameMetadata: StackFrameMetadata,
   samples: number
 ): CallerCalleeIntermediateNode {
@@ -97,20 +97,20 @@ function sortRelevantTraces(relevantTraces: Map<StackTraceID, relevantTrace>): S
   });
 }
 
-// buildCallerCalleeIntermediateRoot builds a graph in the internal
+// createCallerCalleeIntermediateRoot creates a graph in the internal
 // representation from a StackFrameMetadata that identifies the "centered"
 // function and the trace results that provide traces and the number of times
 // that the trace has been seen.
 //
 // The resulting data structure contains all of the data, but is not yet in the
 // form most easily digestible by others.
-export function buildCallerCalleeIntermediateRoot(
+export function createCallerCalleeIntermediateRoot(
   rootFrame: StackFrameMetadata,
   traces: Map<StackTraceID, number>,
   frames: Map<StackTraceID, StackFrameMetadata[]>
 ): CallerCalleeIntermediateNode {
   // Create a node for the centered frame
-  const root = buildCallerCalleeIntermediateNode(rootFrame, 0);
+  const root = createCallerCalleeIntermediateNode(rootFrame, 0);
 
   // Obtain only the relevant frames (e.g. frames that contain the root frame
   // somewhere). If the root frame is "empty" (e.g. fileID is zero and line
@@ -145,7 +145,7 @@ export function buildCallerCalleeIntermediateRoot(
       const calleeName = hashFrameGroup(defaultGroupBy(callee));
       let node = currentNode.callees.get(calleeName);
       if (node === undefined) {
-        node = buildCallerCalleeIntermediateNode(callee, samples);
+        node = createCallerCalleeIntermediateNode(callee, samples);
         currentNode.callees.set(calleeName, node);
       } else {
         node.samples += samples;
@@ -173,23 +173,23 @@ export type CallerCalleeNode = {
   Samples: number;
 };
 
-export function buildCallerCalleeNode(partial: Partial<CallerCalleeNode> = {}): CallerCalleeNode {
+export function createCallerCalleeNode(options: Partial<CallerCalleeNode> = {}): CallerCalleeNode {
   const node = {} as CallerCalleeNode;
 
-  node.Callers = clone(partial.Callers ?? []);
-  node.Callees = clone(partial.Callees ?? []);
-  node.FileID = partial.FileID ?? '';
-  node.FrameType = partial.FrameType ?? 0;
-  node.ExeFileName = partial.ExeFileName ?? '';
-  node.FunctionID = partial.FunctionID ?? '';
-  node.FunctionName = partial.FunctionName ?? '';
-  node.AddressOrLine = partial.AddressOrLine ?? 0;
-  node.FunctionSourceLine = partial.FunctionSourceLine ?? 0;
-  node.FunctionSourceID = partial.FunctionSourceID ?? '';
-  node.FunctionSourceURL = partial.FunctionSourceURL ?? '';
-  node.SourceFilename = partial.SourceFilename ?? '';
-  node.SourceLine = partial.SourceLine ?? 0;
-  node.Samples = partial.Samples ?? 0;
+  node.Callers = clone(options.Callers ?? []);
+  node.Callees = clone(options.Callees ?? []);
+  node.FileID = options.FileID ?? '';
+  node.FrameType = options.FrameType ?? 0;
+  node.ExeFileName = options.ExeFileName ?? '';
+  node.FunctionID = options.FunctionID ?? '';
+  node.FunctionName = options.FunctionName ?? '';
+  node.AddressOrLine = options.AddressOrLine ?? 0;
+  node.FunctionSourceLine = options.FunctionSourceLine ?? 0;
+  node.FunctionSourceID = options.FunctionSourceID ?? '';
+  node.FunctionSourceURL = options.FunctionSourceURL ?? '';
+  node.SourceFilename = options.SourceFilename ?? '';
+  node.SourceLine = options.SourceLine ?? 0;
+  node.Samples = options.Samples ?? 0;
 
   return node;
 }
@@ -245,7 +245,7 @@ function sortNodes(
 export function fromCallerCalleeIntermediateNode(
   root: CallerCalleeIntermediateNode
 ): CallerCalleeNode {
-  const node = buildCallerCalleeNode({ Samples: root.samples });
+  const node = createCallerCalleeNode({ Samples: root.samples });
 
   // Populate the other fields with data from the root node. Selectors are not supposed
   // to be able to fail.

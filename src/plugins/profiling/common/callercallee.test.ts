@@ -7,14 +7,14 @@
  */
 
 import {
-  buildCallerCalleeIntermediateNode,
+  createCallerCalleeIntermediateNode,
   fromCallerCalleeIntermediateNode,
 } from './callercallee';
-import { buildStackFrameMetadata, hashFrameGroup } from './profiling';
+import { createStackFrameMetadata, hashFrameGroup } from './profiling';
 
 describe('Caller-callee operations', () => {
   test('1', () => {
-    const parentFrame = buildStackFrameMetadata({
+    const parentFrame = createStackFrameMetadata({
       FileID: '6bc50d345244d5956f93a1b88f41874d',
       FrameType: 3,
       AddressOrLine: 971740,
@@ -24,9 +24,9 @@ describe('Caller-callee operations', () => {
       ExeFileName: 'libc-2.26.so',
       Index: 1,
     });
-    const parent = buildCallerCalleeIntermediateNode(parentFrame, 10);
+    const parent = createCallerCalleeIntermediateNode(parentFrame, 10);
 
-    const childFrame = buildStackFrameMetadata({
+    const childFrame = createStackFrameMetadata({
       FileID: '8d8696a4fd51fa88da70d3fde138247d',
       FrameType: 3,
       AddressOrLine: 67000,
@@ -36,9 +36,9 @@ describe('Caller-callee operations', () => {
       ExeFileName: 'auditd',
       Index: 0,
     });
-    const child = buildCallerCalleeIntermediateNode(childFrame, 10);
+    const child = createCallerCalleeIntermediateNode(childFrame, 10);
 
-    const root = buildCallerCalleeIntermediateNode(buildStackFrameMetadata(), 10);
+    const root = createCallerCalleeIntermediateNode(createStackFrameMetadata(), 10);
     root.callees.set(hashFrameGroup(child.frameGroup), child);
     root.callees.set(hashFrameGroup(parent.frameGroup), parent);
 
