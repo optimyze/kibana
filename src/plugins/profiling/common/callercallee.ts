@@ -232,7 +232,7 @@ function sortNodes(
 ): CallerCalleeIntermediateNode[] {
   const sortedNodes = new Array<CallerCalleeIntermediateNode>();
   for (const node of nodes.values()) {
-    sortedNodes.push(clone(node));
+    sortedNodes.push(node);
   }
   return sortedNodes.sort((n1, n2) => {
     return compareFrameGroup(n1.frameGroup, n2.frameGroup);
