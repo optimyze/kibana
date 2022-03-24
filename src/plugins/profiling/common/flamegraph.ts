@@ -75,6 +75,35 @@ export class FlameGraph {
     this.logger = logger;
   }
 
+  // getFrameMetadataForTraces collects all of the per-stack-frame metadata for a
+  // given set of trace IDs and their respective stack frames.
+  //
+  // This is similar to GetTraceMetaData in pf-storage-backend/storagebackend/storagebackendv1/reads_webservice.go
+  private getFrameMetadataForTraces(): Map<StackTraceID, StackFrameMetadata[]> {
+    const frameMetadataForTraces = new Map<StackTraceID, StackFrameMetadata[]>();
+    for (const [stackTraceID, trace] of this.stacktraces) {
+      const frameMetadata = new Array<StackFrameMetadata>();
+      for (let i = 0; i < trace.FrameID.length; i++) {
+        const metadata = buildStackFrameMetadata({ Index: i });
+        metadata.FileID = trace.FileID[i];
+        metadata.FrameType = trace.Type[i];
+
+        const frame = this.stackframes.get(trace.FrameID[i])!;
+        metadata.AddressOrLine = frame.LineNumber;
+        metadata.FunctionName = frame.FunctionName;
+        metadata.FunctionOffset = frame.FunctionOffset;
+        metadata.SourceLine = frame.LineNumber;
+
+        const executable = this.executables.get(trace.FileID[i])!;
+        metadata.ExeFileName = executable.FileName;
+
+        frameMetadata.push(metadata);
+      }
+      frameMetadataForTraces.set(stackTraceID, frameMetadata);
+    }
+    return frameMetadataForTraces;
+  }
+
   private getExeFileName(exe: any, type: number) {
     if (exe?.FileName === undefined) {
       this.logger.warn('missing executable FileName');
@@ -158,8 +187,12 @@ export class FlameGraph {
 
   toPixi(): PixiFlameGraph {
     const rootFrame = buildStackFrameMetadata();
-    const metadataForTraces = new Map<StackTraceID, StackFrameMetadata[]>();
-    const diagram = buildCallerCalleeIntermediateRoot(rootFrame, this.events, metadataForTraces);
+    const frameMetadataForTraces = this.getFrameMetadataForTraces();
+    const diagram = buildCallerCalleeIntermediateRoot(
+      rootFrame,
+      this.events,
+      frameMetadataForTraces
+    );
     return {
       ...fromCallerCalleeIntermediateNode(diagram),
       TotalTraces: this.totalCount,

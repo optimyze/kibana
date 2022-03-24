@@ -31,56 +31,92 @@ export type StackFrame = {
   SourceType: number;
 };
 
+export interface Executable {
+  FileName: string;
+}
+
 export type StackFrameMetadata = {
+  // StackTrace.FileID
   FileID: FileID;
-  AddressOrLine: number;
-
-  FunctionName: string;
-  SourceID: FileID;
-  SourceLine: number;
-  FunctionOffset: number;
-
-  CommitHash: string;
-  SourceCodeURL: string;
-  SourcePackageHash: string;
-  FrameTypeString: string;
-  SourceFilename: string;
-  ExeFileName: string;
-  SourcePackageURL: string;
+  // StackTrace.Type
   FrameType: number;
+  // stringified FrameType -- FrameType.String()
+  FrameTypeString: string;
+
+  // StackFrame.LineNumber?
+  AddressOrLine: number;
+  // StackFrame.FunctionName
+  FunctionName: string;
+  // StackFrame.FunctionOffset
+  FunctionOffset: number;
+  // should this be StackFrame.SourceID?
+  SourceID: FileID;
+  // StackFrame.LineNumber
+  SourceLine: number;
+
+  // value defined by:
+  //   if StackFrame.FunctionOffset > 0:
+  //     StackFrame.LineNumber - StackFrame.FunctionOffset
+  //   else:
+  //     0
+  //
+  // Unknown/invalid offsets are currently set to 0.
+  //
+  // In this case we leave FunctionLine=0 as a flag for the UI that the
+  // FunctionLine should not be displayed.
+  //
+  // As offset=0 could also be a legit value, this work-around needs a real fix.
+  // The idea for after GA is to change offset=-1 to indicate unknown/invalid.
   FunctionLine: number;
+
+  // Executable.FileName
+  ExeFileName: string;
+
+  // unused atm due to lack of symbolization metadata
+  CommitHash: string;
+  // unused atm due to lack of symbolization metadata
+  SourceCodeURL: string;
+  // unused atm due to lack of symbolization metadata
+  SourceFilename: string;
+  // unused atm due to lack of symbolization metadata
+  SourcePackageHash: string;
+  // unused atm due to lack of symbolization metadata
+  SourcePackageURL: string;
+  // unused atm due to lack of symbolization metadata
   SourceType: number;
+
+  Index: number;
 };
 
 const defaultStackFrameMetadata: StackFrameMetadata = {
   FileID: '',
-  AddressOrLine: 0,
+  FrameType: 0,
+  FrameTypeString: '',
 
+  AddressOrLine: 0,
   FunctionName: '',
+  FunctionOffset: 0,
   SourceID: '',
   SourceLine: 0,
-  FunctionOffset: 0,
+
+  FunctionLine: 0,
+
+  ExeFileName: '',
 
   CommitHash: '',
   SourceCodeURL: '',
-  SourcePackageHash: '',
-  FrameTypeString: '',
   SourceFilename: '',
-  ExeFileName: '',
+  SourcePackageHash: '',
   SourcePackageURL: '',
-  FrameType: 0,
-  FunctionLine: 0,
   SourceType: 0,
+
+  Index: 0,
 };
 
 export function buildStackFrameMetadata(
   metadata: Partial<StackFrameMetadata> = {}
 ): StackFrameMetadata {
   return override(defaultStackFrameMetadata, metadata);
-}
-
-export interface Executable {
-  FileName: string;
 }
 
 export type FrameGroup = Pick<
