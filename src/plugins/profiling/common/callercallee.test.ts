@@ -21,7 +21,6 @@ describe('Caller-callee operations', () => {
       FunctionName: 'epoll_wait',
       SourceID: 'd670b496cafcaea431a23710fb5e4f58',
       SourceLine: 30,
-      FunctionLine: 27,
       ExeFileName: 'libc-2.26.so',
       Index: 1,
     });
@@ -34,7 +33,6 @@ describe('Caller-callee operations', () => {
       FunctionName: 'epoll_poll',
       SourceID: 'f0a7901dcefed6cc8992a324b9df733c',
       SourceLine: 150,
-      FunctionLine: 139,
       ExeFileName: 'auditd',
       Index: 0,
     });
