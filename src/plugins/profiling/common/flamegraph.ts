@@ -84,18 +84,19 @@ export class FlameGraph {
     for (const [stackTraceID, trace] of this.stacktraces) {
       const frameMetadata = new Array<StackFrameMetadata>();
       for (let i = 0; i < trace.FrameID.length; i++) {
-        const metadata = createStackFrameMetadata({ Index: i });
-        metadata.FileID = Buffer.from(trace.FileID[i], 'base64url').toString('hex');
-        metadata.FrameType = trace.Type[i];
-
         const frame = this.stackframes.get(trace.FrameID[i])!;
-        metadata.AddressOrLine = frame.LineNumber;
-        metadata.FunctionName = frame.FunctionName;
-        metadata.FunctionOffset = frame.FunctionOffset;
-        metadata.SourceLine = frame.LineNumber;
-
         const executable = this.executables.get(trace.FileID[i])!;
-        metadata.ExeFileName = executable.FileName;
+
+        const metadata = createStackFrameMetadata({
+          FileID: Buffer.from(trace.FileID[i], 'base64url').toString('hex'),
+          FrameType: trace.Type[i],
+          AddressOrLine: frame.LineNumber,
+          FunctionName: frame.FunctionName,
+          FunctionOffset: frame.FunctionOffset,
+          SourceLine: frame.LineNumber,
+          ExeFileName: executable.FileName,
+          Index: i,
+        });
 
         frameMetadata.push(metadata);
       }
