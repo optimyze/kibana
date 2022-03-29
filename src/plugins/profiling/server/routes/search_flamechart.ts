@@ -172,10 +172,10 @@ export function parallelMget(
   nQueries: number,
   stackTraceIDs: StackTraceID[],
   chunkSize: number,
-  client: ElasticsearchClient,
-  results: Array<Promise<any>>
+  client: ElasticsearchClient
 ) {
-  return async () => {
+  return (): Array<Promise<any>> => {
+    const futures: Array<Promise<any>> = [];
     for (let i = 0; i < nQueries; i++) {
       const func = async () => {
         const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
@@ -187,8 +187,9 @@ export function parallelMget(
       };
 
       // Build and send the queries asynchronously.
-      results[i] = func();
+      futures.push(func());
     }
+    return futures;
   };
 }
 
@@ -295,49 +296,51 @@ async function queryFlameGraph(
     logger.info('unique downsampled stacktraces: ' + stackTraceEvents.size);
   }
 
-  const nQueries = 4;
-  const results = new Array(nQueries);
+  // profiling-stacktraces is configured with 16 shards
+  const nQueries = 16;
   const chunkSize = Math.floor(stackTraceEvents.size / nQueries);
   const stackTraceIDs = [...stackTraceEvents.keys()];
 
+  // Create a lookup map StackTraceID -> StackTrace.
+  const stackTraces = new Map<StackTraceID, StackTrace>();
   await logExecutionLatency(
     logger,
     'mget query for ' + stackTraceEvents.size + ' stacktraces',
-    parallelMget(nQueries, stackTraceIDs, chunkSize, client, results)
-  );
-
-  logger.info('results len ' + results.length);
-
-  // Create a lookup map StackTraceID -> StackTrace.
-  const stackTraces = new Map<StackTraceID, StackTrace>();
-  for (let i = 0; i < nQueries; i++) {
-    if (testing) {
-      for (const trace of results[i].body.hits.hits) {
-        const frameIDs = trace.fields.FrameID as string[];
-        const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
-        stackTraces.set(trace._id, {
-          FileID: fileIDs,
-          FrameID: frameIDs,
-          Type: trace.fields.Type,
-        });
-      }
-    } else {
-      for (const trace of results[i].body.docs) {
-        // Sometimes we don't find the trace.
-        // This is due to ES delays writing (data is not immediately seen after write).
-        // Also, ES doesn't know about transactions.
-        if (trace.found) {
-          const frameIDs = trace._source.FrameID as string[];
-          const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
-          stackTraces.set(trace._id, {
-            FileID: fileIDs,
-            FrameID: frameIDs,
-            Type: trace._source.Type,
+    async () => {
+      return await Promise.all(parallelMget(nQueries, stackTraceIDs, chunkSize, client)()).then(
+        (results) => {
+          results.map((result) => {
+            if (testing) {
+              for (const trace of result.body.hits.hits) {
+                const frameIDs = trace.fields.FrameID as string[];
+                const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
+                stackTraces.set(trace._id, {
+                  FileID: fileIDs,
+                  FrameID: frameIDs,
+                  Type: trace.fields.Type,
+                });
+              }
+            } else {
+              for (const trace of result.body.docs) {
+                // Sometimes we don't find the trace.
+                // This is due to ES delays writing (data is not immediately seen after write).
+                // Also, ES doesn't know about transactions.
+                if (trace.found) {
+                  const frameIDs = trace._source.FrameID as string[];
+                  const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
+                  stackTraces.set(trace._id, {
+                    FileID: fileIDs,
+                    FrameID: frameIDs,
+                    Type: trace._source.Type,
+                  });
+                }
+              }
+            }
           });
         }
-      }
+      );
     }
-  }
+  );
 
   if (stackTraces.size < stackTraceEvents.size) {
     logger.info(

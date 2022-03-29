@@ -12,13 +12,6 @@ import {
   DownsampledEventsIndex,
   parallelMget,
 } from './search_flamechart';
-import {
-  AggregationsHistogramAggregate,
-  AggregationsHistogramBucket,
-  AggregationsMultiBucketAggregateBase,
-  AggregationsStringTermsBucket,
-} from '@elastic/elasticsearch/lib/api/types';
-import { DataRequestHandlerContext } from '../../../data/server';
 import { ElasticsearchClient } from 'kibana/server';
 
 describe('Using down-sampled indexes', () => {
@@ -100,9 +93,8 @@ describe('Calling mget from events to stacktraces', () => {
   test('parallel queries to ES are resolved as promises', async () => {
     const numberOfFrames = 4;
     const mock = mockClient(numberOfFrames) as unknown as ElasticsearchClient;
-    const results: Array<Promise<any>> = [];
-    const fn = parallelMget(4, Array.from(['a', 'b', 'c', 'd']), 1, mock, results);
-    await fn();
+    const futures = parallelMget(4, Array.from(['a', 'b', 'c', 'd']), 1, mock);
+    const results = futures();
     expect(mock.mget).toBeCalledTimes(4);
     expect(results.length).toEqual(4);
     Promise.all(results).then((all) => {
