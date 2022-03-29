@@ -176,7 +176,6 @@ export function parallelMget(
   results: Array<Promise<any>>
 ) {
   return async () => {
-    const promises = new Array(nQueries);
     for (let i = 0; i < nQueries; i++) {
       const func = async () => {
         const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
@@ -189,12 +188,6 @@ export function parallelMget(
 
       // Build and send the queries asynchronously.
       results[i] = func();
-    }
-
-    for (let i = 0; i < nQueries; i++) {
-      await Promise.any(promises).then((res) => {
-        results[i] = res;
-      });
     }
   };
 }
