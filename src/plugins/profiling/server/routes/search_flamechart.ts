@@ -307,8 +307,8 @@ async function queryFlameGraph(
     logger,
     'mget query for ' + stackTraceEvents.size + ' stacktraces',
     async () => {
-      return await Promise.all(parallelMget(nQueries, stackTraceIDs, chunkSize, client)()).then(
-        (results) => {
+      return await Promise.all(parallelMget(nQueries, stackTraceIDs, chunkSize, client)())
+        .then((results) => {
           results.map((result) => {
             if (testing) {
               for (const trace of result.body.hits.hits) {
@@ -337,8 +337,10 @@ async function queryFlameGraph(
               }
             }
           });
-        }
-      );
+        })
+        .catch((err) => {
+          logger.error('Failed to get stacktraces from _mget: ' + err.message);
+        });
     }
   );
 
