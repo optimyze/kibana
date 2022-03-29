@@ -168,6 +168,37 @@ function getNumberOfUniqueStacktracesWithoutLeafNode(
   return stackTracesNoLeaf.size;
 }
 
+export function parallelMget(
+  nQueries: number,
+  stackTraceIDs: StackTraceID[],
+  chunkSize: number,
+  client: ElasticsearchClient,
+  results: Array<Promise<any>>
+) {
+  return async () => {
+    const promises = new Array(nQueries);
+    for (let i = 0; i < nQueries; i++) {
+      const func = async () => {
+        const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
+        return client.mget({
+          index: 'profiling-stacktraces',
+          ids: [...chunk],
+          _source_includes: ['FrameID', 'Type'],
+        });
+      };
+
+      // Build and send the queries asynchronously.
+      results[i] = func();
+    }
+
+    for (let i = 0; i < nQueries; i++) {
+      await Promise.any(promises).then((res) => {
+        results[i] = res;
+      });
+    }
+  };
+}
+
 async function queryFlameGraph(
   logger: Logger,
   client: ElasticsearchClient,
@@ -273,50 +304,13 @@ async function queryFlameGraph(
 
   const nQueries = 4;
   const results = new Array(nQueries);
+  const chunkSize = Math.floor(stackTraceEvents.size / nQueries);
+  const stackTraceIDs = [...stackTraceEvents.keys()];
 
   await logExecutionLatency(
     logger,
     'mget query for ' + stackTraceEvents.size + ' stacktraces',
-    async () => {
-      const promises = new Array(nQueries);
-      const chunkSize = Math.floor(stackTraceEvents.size / nQueries);
-      const stackTraceIDs = [...stackTraceEvents.keys()];
-
-      logger.info('A');
-
-      for (let i = 0; i < nQueries; i++) {
-        const func = async () => {
-          const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
-          return client.mget({
-            index: 'profiling-stacktraces',
-            ids: [...chunk],
-            _source_includes: ['FrameID', 'Type'],
-          });
-        };
-
-        // Build and send the queries asynchronously.
-        promises[i] = func();
-      }
-
-      logger.info('B');
-
-      /*      for (let i = 0; i < nQueries; i++) {
-        await Promise.any(promises).then((res) => {
-          results[i] = res;
-          logger.info('Got result ' + res.body.docs.length);
-        });
-      }*/
-
-      /*      await Promise.all(promises).then((res) => {
-        results.push(res);
-        logger.info('Got result');
-        logger.info(`Results: ` + res);
-      });
-*/
-      for (let i = 0; i < nQueries; i++) {
-        results[i] = await promises[i];
-      }
-    }
+    parallelMget(nQueries, stackTraceIDs, chunkSize, client, results)
   );
 
   logger.info('results len ' + results.length);
