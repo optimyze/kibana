@@ -6,7 +6,7 @@
  * Side Public License, v 1.
  */
 import { schema } from '@kbn/config-schema';
-import type { IRouter, KibanaResponseFactory } from 'kibana/server';
+import type { IRouter, KibanaResponseFactory, Logger } from 'kibana/server';
 import {
   AggregationsHistogramAggregate,
   AggregationsHistogramBucket,
@@ -18,6 +18,7 @@ import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mapp
 
 export async function topNElasticSearchQuery(
   context: DataRequestHandlerContext,
+  logger: Logger,
   index: string,
   projectID: string,
   timeFrom: string,
@@ -69,6 +70,7 @@ export async function topNElasticSearchQuery(
 
 export function queryTopNCommon(
   router: IRouter<DataRequestHandlerContext>,
+  logger: Logger,
   pathName: string,
   searchField: string
 ) {
@@ -91,6 +93,7 @@ export function queryTopNCommon(
       try {
         return await topNElasticSearchQuery(
           context,
+          logger,
           index,
           projectID,
           timeFrom,
@@ -112,36 +115,41 @@ export function queryTopNCommon(
 }
 
 export function registerTraceEventsTopNContainersSearchRoute(
-  router: IRouter<DataRequestHandlerContext>
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
 ) {
   const paths = getRemoteRoutePaths();
-  return queryTopNCommon(router, paths.TopNContainers, 'ContainerName');
+  return queryTopNCommon(router, logger, paths.TopNContainers, 'ContainerName');
 }
 
 export function registerTraceEventsTopNDeploymentsSearchRoute(
-  router: IRouter<DataRequestHandlerContext>
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
 ) {
   const paths = getRemoteRoutePaths();
-  return queryTopNCommon(router, paths.TopNDeployments, 'PodName');
+  return queryTopNCommon(router, logger, paths.TopNDeployments, 'PodName');
 }
 
 export function registerTraceEventsTopNHostsSearchRoute(
-  router: IRouter<DataRequestHandlerContext>
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
 ) {
   const paths = getRemoteRoutePaths();
-  return queryTopNCommon(router, paths.TopNHosts, 'HostID');
+  return queryTopNCommon(router, logger, paths.TopNHosts, 'HostID');
 }
 
 export function registerTraceEventsTopNStackTracesSearchRoute(
-  router: IRouter<DataRequestHandlerContext>
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
 ) {
   const paths = getRemoteRoutePaths();
-  return queryTopNCommon(router, paths.TopNTraces, 'StackTraceID');
+  return queryTopNCommon(router, logger, paths.TopNTraces, 'StackTraceID');
 }
 
 export function registerTraceEventsTopNThreadsSearchRoute(
-  router: IRouter<DataRequestHandlerContext>
+  router: IRouter<DataRequestHandlerContext>,
+  logger: Logger
 ) {
   const paths = getRemoteRoutePaths();
-  return queryTopNCommon(router, paths.TopNThreads, 'ThreadName');
+  return queryTopNCommon(router, logger, paths.TopNThreads, 'ThreadName');
 }
