@@ -29,15 +29,22 @@ export async function topNElasticSearchQuery(
   response: KibanaResponseFactory
 ) {
   const esClient = context.core.elasticsearch.client.asCurrentUser;
-  const resTopNStackTraces = await esClient.search({
-    index,
-    body: {
-      query: newProjectTimeQuery(projectID, timeFrom, timeTo),
-      aggs: {
-        histogram: autoHistogramSumCountOnGroupByField(searchField, topNItems),
-      },
-    },
-  });
+
+  const resTopNStackTraces = await logExecutionLatency(
+    logger,
+    'query to find TopN stacktraces',
+    async () => {
+      return await esClient.search({
+        index,
+        body: {
+          query: newProjectTimeQuery(projectID, timeFrom, timeTo),
+          aggs: {
+            histogram: autoHistogramSumCountOnGroupByField(searchField, topNItems),
+          },
+        },
+      });
+    }
+  );
 
   if (searchField === 'StackTraceID') {
     const docIDs: string[] = [];
@@ -49,10 +56,16 @@ export async function topNElasticSearchQuery(
       });
     });
 
-    const resTraceMetadata = await esClient.mget({
-      index: 'profiling-stacktraces',
-      body: { ids: docIDs },
-    });
+    const resTraceMetadata = await logExecutionLatency(
+      logger,
+      'query for ' + docIDs.length + ' stacktraces',
+      async () => {
+        return await esClient.mget({
+          index: 'profiling-stacktraces',
+          body: { ids: docIDs },
+        });
+      }
+    );
 
     return response.ok({
       body: {
