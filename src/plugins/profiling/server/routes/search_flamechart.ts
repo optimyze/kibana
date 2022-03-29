@@ -168,6 +168,31 @@ function getNumberOfUniqueStacktracesWithoutLeafNode(
   return stackTracesNoLeaf.size;
 }
 
+export function parallelMget(
+  nQueries: number,
+  stackTraceIDs: StackTraceID[],
+  chunkSize: number,
+  client: ElasticsearchClient
+) {
+  return (): Array<Promise<any>> => {
+    const futures: Array<Promise<any>> = [];
+    for (let i = 0; i < nQueries; i++) {
+      const func = async () => {
+        const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
+        return client.mget({
+          index: 'profiling-stacktraces',
+          ids: [...chunk],
+          _source_includes: ['FrameID', 'Type'],
+        });
+      };
+
+      // Build and send the queries asynchronously.
+      futures.push(func());
+    }
+    return futures;
+  };
+}
+
 async function queryFlameGraph(
   logger: Logger,
   client: ElasticsearchClient,
@@ -271,86 +296,53 @@ async function queryFlameGraph(
     logger.info('unique downsampled stacktraces: ' + stackTraceEvents.size);
   }
 
-  const nQueries = 4;
-  const results = new Array(nQueries);
+  // profiling-stacktraces is configured with 16 shards
+  const nQueries = 16;
+  const chunkSize = Math.floor(stackTraceEvents.size / nQueries);
+  const stackTraceIDs = [...stackTraceEvents.keys()];
 
+  // Create a lookup map StackTraceID -> StackTrace.
+  const stackTraces = new Map<StackTraceID, StackTrace>();
   await logExecutionLatency(
     logger,
     'mget query for ' + stackTraceEvents.size + ' stacktraces',
     async () => {
-      const promises = new Array(nQueries);
-      const chunkSize = Math.floor(stackTraceEvents.size / nQueries);
-      const stackTraceIDs = [...stackTraceEvents.keys()];
-
-      logger.info('A');
-
-      for (let i = 0; i < nQueries; i++) {
-        const func = async () => {
-          const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
-          return client.mget({
-            index: 'profiling-stacktraces',
-            ids: [...chunk],
-            _source_includes: ['FrameID', 'Type'],
+      return await Promise.all(parallelMget(nQueries, stackTraceIDs, chunkSize, client)())
+        .then((results) => {
+          results.map((result) => {
+            if (testing) {
+              for (const trace of result.body.hits.hits) {
+                const frameIDs = trace.fields.FrameID as string[];
+                const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
+                stackTraces.set(trace._id, {
+                  FileID: fileIDs,
+                  FrameID: frameIDs,
+                  Type: trace.fields.Type,
+                });
+              }
+            } else {
+              for (const trace of result.body.docs) {
+                // Sometimes we don't find the trace.
+                // This is due to ES delays writing (data is not immediately seen after write).
+                // Also, ES doesn't know about transactions.
+                if (trace.found) {
+                  const frameIDs = trace._source.FrameID as string[];
+                  const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
+                  stackTraces.set(trace._id, {
+                    FileID: fileIDs,
+                    FrameID: frameIDs,
+                    Type: trace._source.Type,
+                  });
+                }
+              }
+            }
           });
-        };
-
-        // Build and send the queries asynchronously.
-        promises[i] = func();
-      }
-
-      logger.info('B');
-
-      /*      for (let i = 0; i < nQueries; i++) {
-        await Promise.any(promises).then((res) => {
-          results[i] = res;
-          logger.info('Got result ' + res.body.docs.length);
+        })
+        .catch((err) => {
+          logger.error('Failed to get stacktraces from _mget: ' + err.message);
         });
-      }*/
-
-      /*      await Promise.all(promises).then((res) => {
-        results.push(res);
-        logger.info('Got result');
-        logger.info(`Results: ` + res);
-      });
-*/
-      for (let i = 0; i < nQueries; i++) {
-        results[i] = await promises[i];
-      }
     }
   );
-
-  logger.info('results len ' + results.length);
-
-  // Create a lookup map StackTraceID -> StackTrace.
-  const stackTraces = new Map<StackTraceID, StackTrace>();
-  for (let i = 0; i < nQueries; i++) {
-    if (testing) {
-      for (const trace of results[i].body.hits.hits) {
-        const frameIDs = trace.fields.FrameID as string[];
-        const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
-        stackTraces.set(trace._id, {
-          FileID: fileIDs,
-          FrameID: frameIDs,
-          Type: trace.fields.Type,
-        });
-      }
-    } else {
-      for (const trace of results[i].body.docs) {
-        // Sometimes we don't find the trace.
-        // This is due to ES delays writing (data is not immediately seen after write).
-        // Also, ES doesn't know about transactions.
-        if (trace.found) {
-          const frameIDs = trace._source.FrameID as string[];
-          const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
-          stackTraces.set(trace._id, {
-            FileID: fileIDs,
-            FrameID: frameIDs,
-            Type: trace._source.Type,
-          });
-        }
-      }
-    }
-  }
 
   if (stackTraces.size < stackTraceEvents.size) {
     logger.info(
