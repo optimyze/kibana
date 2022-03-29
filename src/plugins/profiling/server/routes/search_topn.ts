@@ -46,40 +46,41 @@ export async function topNElasticSearchQuery(
     }
   );
 
-  if (searchField === 'StackTraceID') {
-    const docIDs: string[] = [];
-    (
-      resTopNStackTraces.body.aggregations?.histogram as AggregationsHistogramAggregate
-    ).buckets.forEach((timeInterval: AggregationsHistogramBucket) => {
-      timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
-        docIDs.push(stackTraceItem.key);
-      });
-    });
-
-    const resTraceMetadata = await logExecutionLatency(
-      logger,
-      'query for ' + docIDs.length + ' stacktraces',
-      async () => {
-        return await esClient.mget({
-          index: 'profiling-stacktraces',
-          body: { ids: docIDs },
-        });
-      }
-    );
-
-    return response.ok({
-      body: {
-        topN: resTopNStackTraces.body.aggregations,
-        traceMetadata: resTraceMetadata.body.docs,
-      },
-    });
-  } else {
+  if (searchField !== 'StackTraceID') {
     return response.ok({
       body: {
         topN: resTopNStackTraces.body.aggregations,
       },
     });
   }
+
+  const docIDs: string[] = [];
+
+  (
+    resTopNStackTraces.body.aggregations?.histogram as AggregationsHistogramAggregate
+  ).buckets.forEach((timeInterval: AggregationsHistogramBucket) => {
+    timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
+      docIDs.push(stackTraceItem.key);
+    });
+  });
+
+  const resTraceMetadata = await logExecutionLatency(
+    logger,
+    'query for ' + docIDs.length + ' stacktraces',
+    async () => {
+      return await esClient.mget({
+        index: 'profiling-stacktraces',
+        body: { ids: docIDs },
+      });
+    }
+  );
+
+  return response.ok({
+    body: {
+      topN: resTopNStackTraces.body.aggregations,
+      traceMetadata: resTraceMetadata.body.docs,
+    },
+  });
 }
 
 export function queryTopNCommon(
