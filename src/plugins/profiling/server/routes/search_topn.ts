@@ -14,6 +14,7 @@ import {
 } from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRemoteRoutePaths } from '../../common';
+import { logExecutionLatency } from './logger';
 import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mappings';
 
 export async function topNElasticSearchQuery(
