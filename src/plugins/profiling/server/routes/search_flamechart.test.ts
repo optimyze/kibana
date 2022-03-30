@@ -93,8 +93,7 @@ describe('Calling mget from events to stacktraces', () => {
   test('parallel queries to ES are resolved as promises', async () => {
     const numberOfFrames = 4;
     const mock = mockClient(numberOfFrames) as unknown as ElasticsearchClient;
-    const futures = parallelMget(4, Array.from(['a', 'b', 'c', 'd']), 1, mock);
-    const results = futures();
+    const results = parallelMget(4, Array.from(['a', 'b', 'c', 'd']), 1, mock);
     expect(mock.mget).toBeCalledTimes(4);
     expect(results.length).toEqual(4);
     Promise.all(results).then((all) => {

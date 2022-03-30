@@ -173,24 +173,20 @@ export function parallelMget(
   stackTraceIDs: StackTraceID[],
   chunkSize: number,
   client: ElasticsearchClient
-) {
-  return (): Array<Promise<any>> => {
-    const futures: Array<Promise<any>> = [];
-    for (let i = 0; i < nQueries; i++) {
-      const func = async () => {
-        const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
-        return client.mget({
-          index: 'profiling-stacktraces',
-          ids: [...chunk],
-          _source_includes: ['FrameID', 'Type'],
-        });
-      };
+): Array<Promise<any>> {
+  const futures: Array<Promise<any>> = [];
+  [...Array(nQueries).keys()].forEach((i) => {
+    const chunk = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
+    futures.push(
+      client.mget({
+        index: 'profiling-stacktraces',
+        ids: [...chunk],
+        _source_includes: ['FrameID', 'Type'],
+      })
+    );
+  });
 
-      // Build and send the queries asynchronously.
-      futures.push(func());
-    }
-    return futures;
-  };
+  return futures;
 }
 
 async function queryFlameGraph(
@@ -307,7 +303,7 @@ async function queryFlameGraph(
     logger,
     'mget query for ' + stackTraceEvents.size + ' stacktraces',
     async () => {
-      return await Promise.all(parallelMget(nQueries, stackTraceIDs, chunkSize, client)())
+      return await Promise.all(parallelMget(nQueries, stackTraceIDs, chunkSize, client))
         .then((results) => {
           results.map((result) => {
             if (testing) {
