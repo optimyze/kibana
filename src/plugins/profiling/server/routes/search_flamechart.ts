@@ -212,6 +212,9 @@ async function queryFlameGraph(
   // The downside of `_source` is: it takes 2.5x more time on the ES side (see "took" field).
   // The `composite` keyword skips sorting the buckets as and return results 'as is'.
   // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
+  logger.info("About to fetch events data.")
+  logger.info("eventsIndex.name is " + eventsIndex.name)
+  logger.info("filter is " + filter)
   const resEvents = await logExecutionLatency(
     logger,
     'query to fetch events from ' + eventsIndex.name,
@@ -271,6 +274,7 @@ async function queryFlameGraph(
     logger.info('unique downsampled stacktraces: ' + stackTraceEvents.size);
   }
 
+  logger.info("stackTraceEvents.keys() is " + [...stackTraceEvents.keys()])
   const resStackTraces = await logExecutionLatency(
     logger,
     'mget query for ' + stackTraceEvents.size + ' stacktraces',
