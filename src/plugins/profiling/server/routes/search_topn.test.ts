@@ -72,7 +72,7 @@ describe('TopN data from Elasticsearch', () => {
         'StackTraceID',
         kibanaResponseFactory
       );
-      expect(client.search).toHaveBeenCalledTimes(1);
+      expect(client.search).toHaveBeenCalledTimes(2);
       expect(client.mget).toHaveBeenCalledTimes(1);
     });
   });
