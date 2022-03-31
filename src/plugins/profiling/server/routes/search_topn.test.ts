@@ -6,6 +6,7 @@
  * Side Public License, v 1.
  */
 
+import { loggerMock } from '@kbn/logging/mocks';
 import { topNElasticSearchQuery } from './search_topn';
 import { ElasticsearchClient, kibanaResponseFactory } from '../../../../core/server';
 import { coreMock } from '../../../../core/server/mocks';
@@ -27,6 +28,7 @@ jest.mock('./mappings', () => ({
 describe('TopN data from Elasticsearch', () => {
   const context = coreMock.createRequestHandlerContext();
   const client = context.elasticsearch.client.asCurrentUser as ElasticsearchClient;
+  const logger = loggerMock.create();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,6 +38,7 @@ describe('TopN data from Elasticsearch', () => {
     it('filters by projectID and aggregates timerange on histogram', async () => {
       await topNElasticSearchQuery(
         client,
+        logger,
         index,
         '123',
         '456',
@@ -55,10 +58,12 @@ describe('TopN data from Elasticsearch', () => {
       });
     });
   });
+
   describe('when fetching Stack Traces', () => {
     it('should search first then mget', async () => {
       await topNElasticSearchQuery(
         client,
+        logger,
         index,
         '123',
         '456',
