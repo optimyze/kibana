@@ -60,7 +60,7 @@ export async function topNElasticSearchQuery(
   let totalCount = 0;
   const stackTraceEvents = new Set<StackTraceID>();
 
-  (resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate).buckets.forEach(
+  (resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate)?.buckets?.forEach(
     (timeInterval: AggregationsHistogramBucket) => {
       totalCount += timeInterval.doc_count;
       timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
