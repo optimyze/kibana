@@ -229,7 +229,7 @@
     "deep-freeze-strict": "^1.1.1",
     "deepmerge": "^4.2.2",
     "del": "^5.1.0",
-    "elastic-apm-node": "^3.27.0",
+    "elastic-apm-node": "https://github.com/dgieselaar/apm-agent-nodejs.git#a212ba683632c6a0c2178436451a99ce6f19572a",
     "execa": "^4.0.2",
     "exit-hook": "^2.2.0",
     "expiry-js": "0.1.7",
