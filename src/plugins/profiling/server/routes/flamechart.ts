@@ -176,10 +176,9 @@ async function queryFlameGraph(
   );
 
   let totalCount: number = resEvents.body.aggregations?.total_count.value;
-  let stackTraceEvents: Map<StackTraceID, number>;
+  let stackTraceEvents = new Map<StackTraceID, number>();
 
   await logExecutionLatency(logger, 'processing events data', async () => {
-    stackTraceEvents = new Map<StackTraceID, number>();
     resEvents.body.aggregations?.group_by.buckets.forEach((item: any) => {
       const traceid: StackTraceID = item.key.traceid;
       stackTraceEvents.set(traceid, item.count.value);

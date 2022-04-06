@@ -58,13 +58,13 @@ export async function topNElasticSearchQuery(
   );
 
   let totalCount = 0;
-  const stackTraceEvents = new Set<StackTraceID>();
+  const stackTraceEvents = new Map<StackTraceID, number>();
 
   (resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate)?.buckets?.forEach(
     (timeInterval: AggregationsHistogramBucket) => {
       totalCount += timeInterval.doc_count;
       timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
-        stackTraceEvents.add(stackTraceItem.key);
+        stackTraceEvents.set(stackTraceItem.key, stackTraceItem.count.value);
       });
     }
   );
@@ -86,7 +86,7 @@ export async function topNElasticSearchQuery(
     async () => {
       return await client.mget({
         index: 'profiling-stacktraces',
-        body: { ids: [...stackTraceEvents] },
+        body: { ids: [...stackTraceEvents.keys()] },
       });
     }
   );
