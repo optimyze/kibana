@@ -37,7 +37,7 @@ export function getTopN(obj) {
       const bucket = obj.topN.histogram.buckets[i];
       for (let j = 0; j < bucket.group_by.buckets.length; j++) {
         const v = bucket.group_by.buckets[j];
-        data.push({ x: bucket.key, y: v.Count.value, g: v.key });
+        data.push({ x: bucket.key, y: v.count.value, g: v.key });
       }
     }
   } else if (obj.TopN!) {

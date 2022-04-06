@@ -78,7 +78,7 @@ export function autoHistogramSumCountOnGroupByField(
           size: topNItems,
         },
         aggs: {
-          Count: {
+          count: {
             sum: {
               field: 'Count',
             },
