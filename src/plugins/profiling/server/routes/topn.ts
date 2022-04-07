@@ -15,6 +15,7 @@ import {
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { StackTraceID } from '../../common/profiling';
+import { createTopNBucketsByDate } from '../../common/topn';
 import { findDownsampledIndex } from './downsampling';
 import { logExecutionLatency } from './logger';
 import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mappings';
@@ -72,11 +73,11 @@ export async function topNElasticSearchQuery(
   logger.info('events total count: ' + totalCount);
   logger.info('unique stacktraces: ' + stackTraceEvents.size);
 
+  const topN = createTopNBucketsByDate(resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate);
+
   if (searchField !== 'StackTraceID') {
     return response.ok({
-      body: {
-        topN: resEvents.body.aggregations,
-      },
+      body: topN,
     });
   }
 
@@ -93,7 +94,7 @@ export async function topNElasticSearchQuery(
 
   return response.ok({
     body: {
-      topN: resEvents.body.aggregations,
+      ...topN,
       traceMetadata: resTraceMetadata.body.docs,
     },
   });
