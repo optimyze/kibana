@@ -46,16 +46,16 @@ export async function topNElasticSearchQuery(
     logger,
     'query to fetch events from ' + eventsIndex.name,
     async () => {
-      return await client.search({
-        index: eventsIndex.name,
-        size: 0,
-        body: {
+      return await client.search(
+        {
+          index: eventsIndex.name,
+          size: 0,
           query: filter,
           aggs: {
             histogram: autoHistogramSumCountOnGroupByField(searchField, topNItems),
           },
         },
-      });
+      );
     }
   );
 
