@@ -48,6 +48,7 @@ export async function topNElasticSearchQuery(
     async () => {
       return await client.search({
         index: eventsIndex.name,
+        size: 0,
         body: {
           query: filter,
           aggs: {
