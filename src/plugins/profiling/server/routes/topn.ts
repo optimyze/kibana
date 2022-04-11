@@ -55,6 +55,13 @@ export async function topNElasticSearchQuery(
             histogram: autoHistogramSumCountOnGroupByField(searchField, topNItems),
           },
         },
+        {
+          // Adrien and Dario found out this is a work-around for some bug in 8.1.
+          // It reduces the query time by avoiding unneeded searches.
+          querystring: {
+            pre_filter_shard_size: 1,
+          },
+        }
       );
     }
   );
