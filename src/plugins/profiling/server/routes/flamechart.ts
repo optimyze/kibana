@@ -10,30 +10,11 @@ import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { FlameGraph } from '../../common/flamegraph';
-import { StackTrace, StackTraceID } from '../../common/profiling';
+import { StackTraceID } from '../../common/profiling';
 import { logExecutionLatency } from './logger';
 import { newProjectTimeQuery, ProjectTimeQuery } from './mappings';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
 import { mgetExecutables, mgetStackFrames, mgetStackTraces, searchStackTraces } from './stacktrace';
-
-function getNumberOfUniqueStacktracesWithoutLeafNode(
-  stackTraces: Map<StackTraceID, StackTrace>,
-  level: number
-): number {
-  // Calculate the reduction in lookups that would derive from
-  // StackTraces without leaf frame.
-  const stackTracesNoLeaf = new Set<string>();
-  for (const trace of stackTraces.values()) {
-    stackTracesNoLeaf.add(
-      JSON.stringify({
-        FileID: trace.FileID.slice(level),
-        FrameID: trace.FrameID.slice(level),
-        Type: trace.Type.slice(level),
-      })
-    );
-  }
-  return stackTracesNoLeaf.size;
-}
 
 export function parallelMget(
   nQueries: number,
@@ -159,18 +140,6 @@ async function queryFlameGraph(
   const { stackTraces, stackFrameDocIDs, executableDocIDs } = testing
     ? await searchStackTraces(logger, client, stackTraceEvents)
     : await mgetStackTraces(logger, client, stackTraceEvents);
-
-  /*
-    logger.info(
-    '* unique stacktraces without leaf frame: ' +
-      getNumberOfUniqueStacktracesWithoutLeafNode(stackTraces, 1)
-  );
-
-  logger.info(
-    '* unique stacktraces without 2 leaf frames: ' +
-      getNumberOfUniqueStacktracesWithoutLeafNode(stackTraces, 2)
-  );
-*/
 
   const stackFrames = await mgetStackFrames(logger, client, stackFrameDocIDs);
   const executables = await mgetExecutables(logger, client, executableDocIDs);
