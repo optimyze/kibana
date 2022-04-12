@@ -64,3 +64,15 @@ export function timeRangeFromRequest(request: any): [number, number] {
   const timeTo = parseInt(request.query.timeTo!, 10);
   return [timeFrom, timeTo];
 }
+
+// Converts from a Map object to a Record object since Map objects are not
+// serializable to JSON by default
+export function fromMapToRecord<K extends string, V>(m: Map<K, V>): Record<string, V> {
+  let output: Record<string, V> = {};
+
+  for (const [key, value] of m) {
+    output[key] = value;
+  }
+
+  return output;
+}

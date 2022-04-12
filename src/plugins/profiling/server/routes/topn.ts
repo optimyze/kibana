@@ -13,12 +13,13 @@ import {
   AggregationsStringTermsBucket,
 } from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
-import { getRoutePaths } from '../../common';
-import { StackTraceID } from '../../common/profiling';
+import { fromMapToRecord, getRoutePaths } from '../../common';
+import { groupStackTracesByStackFrameMetadata, StackTraceID } from '../../common/profiling';
 import { createTopNBucketsByDate } from '../../common/topn';
 import { findDownsampledIndex } from './downsampling';
 import { logExecutionLatency } from './logger';
 import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mappings';
+import { mgetExecutables, mgetStackFrames, mgetStackTraces } from './stacktrace';
 
 export async function topNElasticSearchQuery(
   client: ElasticsearchClient,
@@ -66,6 +67,16 @@ export async function topNElasticSearchQuery(
     }
   );
 
+  const topN = createTopNBucketsByDate(
+    resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate
+  );
+
+  if (searchField !== 'StackTraceID') {
+    return response.ok({
+      body: topN,
+    });
+  }
+
   let totalCount = 0;
   const stackTraceEvents = new Map<StackTraceID, number>();
 
@@ -81,31 +92,24 @@ export async function topNElasticSearchQuery(
   logger.info('events total count: ' + totalCount);
   logger.info('unique stacktraces: ' + stackTraceEvents.size);
 
-  const topN = createTopNBucketsByDate(
-    resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate
+  // profiling-stacktraces is configured with 16 shards
+  const { stackTraces, stackFrameDocIDs, executableDocIDs } = await mgetStackTraces(
+    logger,
+    client,
+    stackTraceEvents
   );
 
-  if (searchField !== 'StackTraceID') {
-    return response.ok({
-      body: topN,
-    });
-  }
+  const stackFrames = await mgetStackFrames(logger, client, stackFrameDocIDs);
+  const executables = await mgetExecutables(logger, client, executableDocIDs);
 
-  const resTraceMetadata = await logExecutionLatency(
-    logger,
-    'query for ' + stackTraceEvents.size + ' stacktraces',
-    async () => {
-      return await client.mget({
-        index: 'profiling-stacktraces',
-        body: { ids: [...stackTraceEvents.keys()] },
-      });
-    }
+  const metadata = fromMapToRecord(
+    groupStackTracesByStackFrameMetadata(stackTraces, stackFrames, executables)
   );
 
   return response.ok({
     body: {
       ...topN,
-      traceMetadata: resTraceMetadata.body.docs,
+      Metadata: metadata,
     },
   });
 }
