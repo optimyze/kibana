@@ -99,18 +99,19 @@ export async function topNElasticSearchQuery(
     stackTraceEvents
   );
 
-  const stackFrames = await mgetStackFrames(logger, client, stackFrameDocIDs);
-  const executables = await mgetExecutables(logger, client, executableDocIDs);
-
-  const metadata = fromMapToRecord(
-    groupStackTracesByStackFrameMetadata(stackTraces, stackFrames, executables)
-  );
-
-  return response.ok({
-    body: {
-      ...topN,
-      Metadata: metadata,
-    },
+  return Promise.all([
+    mgetStackFrames(logger, client, stackFrameDocIDs),
+    mgetExecutables(logger, client, executableDocIDs),
+  ]).then(([stackFrames, executables]) => {
+    const metadata = fromMapToRecord(
+      groupStackTracesByStackFrameMetadata(stackTraces, stackFrames, executables)
+    );
+    return response.ok({
+      body: {
+        ...topN,
+        Metadata: metadata,
+      },
+    });
   });
 }
 

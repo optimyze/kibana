@@ -141,20 +141,18 @@ async function queryFlameGraph(
     ? await searchStackTraces(logger, client, stackTraceEvents)
     : await mgetStackTraces(logger, client, stackTraceEvents);
 
-  const stackFrames = await mgetStackFrames(logger, client, stackFrameDocIDs);
-  const executables = await mgetExecutables(logger, client, executableDocIDs);
-
-  return new Promise<FlameGraph>((resolve, _) => {
-    return resolve(
-      new FlameGraph(
-        eventsIndex.sampleRate,
-        totalCount,
-        stackTraceEvents,
-        stackTraces,
-        stackFrames,
-        executables,
-        logger
-      )
+  return Promise.all([
+    mgetStackFrames(logger, client, stackFrameDocIDs),
+    mgetExecutables(logger, client, executableDocIDs),
+  ]).then(([stackFrames, executables]) => {
+    return new FlameGraph(
+      eventsIndex.sampleRate,
+      totalCount,
+      stackTraceEvents,
+      stackTraces,
+      stackFrames,
+      executables,
+      logger
     );
   });
 }
