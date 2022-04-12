@@ -10,18 +10,11 @@ import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { FlameGraph } from '../../common/flamegraph';
-import {
-  Executable,
-  FileID,
-  StackFrame,
-  StackFrameID,
-  StackTrace,
-  StackTraceID,
-} from '../../common/profiling';
+import { StackTrace, StackTraceID } from '../../common/profiling';
 import { logExecutionLatency } from './logger';
 import { newProjectTimeQuery, ProjectTimeQuery } from './mappings';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
-import { mgetStackTraces, searchStackTraces } from './stacktrace';
+import { mgetExecutables, mgetStackFrames, mgetStackTraces, searchStackTraces } from './stacktrace';
 
 function getNumberOfUniqueStacktracesWithoutLeafNode(
   stackTraces: Map<StackTraceID, StackTrace>,
@@ -179,64 +172,8 @@ async function queryFlameGraph(
   );
 */
 
-  const resStackFrames = await logExecutionLatency(
-    logger,
-    'mget query for ' + stackFrameDocIDs.size + ' stackframes',
-    async () => {
-      return await client.mget({
-        index: 'profiling-stackframes',
-        ids: [...stackFrameDocIDs],
-        realtime: false,
-      });
-    }
-  );
-
-  // Create a lookup map StackFrameID -> StackFrame.
-  const stackFrames = new Map<StackFrameID, StackFrame>();
-  let framesFound = 0;
-  await logExecutionLatency(logger, 'processing data', async () => {
-    for (const frame of resStackFrames.body.docs) {
-      if (frame.found) {
-        stackFrames.set(frame._id, frame._source);
-        framesFound++;
-      } else {
-        stackFrames.set(frame._id, {
-          FileName: '',
-          FunctionName: '',
-          FunctionOffset: 0,
-          LineNumber: 0,
-          SourceType: 0,
-        });
-      }
-    }
-  });
-  logger.info('found ' + framesFound + ' / ' + stackFrameDocIDs.size + ' frames');
-
-  const resExecutables = await logExecutionLatency(
-    logger,
-    'mget query for ' + executableDocIDs.size + ' executables',
-    async () => {
-      return await client.mget<any>({
-        index: 'profiling-executables',
-        ids: [...executableDocIDs],
-        _source_includes: ['FileName'],
-      });
-    }
-  );
-
-  // Create a lookup map StackFrameID -> StackFrame.
-  const executables = new Map<FileID, Executable>();
-  await logExecutionLatency(logger, 'processing data', async () => {
-    for (const exe of resExecutables.body.docs) {
-      if (exe.found) {
-        executables.set(exe._id, exe._source);
-      } else {
-        executables.set(exe._id, {
-          FileName: '',
-        });
-      }
-    }
-  });
+  const stackFrames = await mgetStackFrames(logger, client, stackFrameDocIDs);
+  const executables = await mgetExecutables(logger, client, executableDocIDs);
 
   return new Promise<FlameGraph>((resolve, _) => {
     return resolve(
