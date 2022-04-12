@@ -7,8 +7,6 @@
  */
 import { schema } from '@kbn/config-schema';
 import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
-import { chunk } from 'lodash';
-import LRUCache from 'lru-cache';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { FlameGraph } from '../../common/flamegraph';
@@ -23,41 +21,7 @@ import {
 import { logExecutionLatency } from './logger';
 import { newProjectTimeQuery, ProjectTimeQuery } from './mappings';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
-
-const traceLRU = new LRUCache<StackTraceID, StackTrace>({ max: 20000 });
-const frameIDToFileIDCache = new LRUCache<string, FileID>({ max: 100000 });
-
-// convertFrameIDToFileID extracts the FileID from the FrameID and returns as base64url string.
-export function extractFileIDFromFrameID(frameID: string): string {
-  const fileIDChunk = frameID.slice(0, 23);
-  let fileID = frameIDToFileIDCache.get(fileIDChunk) as string;
-  if (fileID) return fileID;
-
-  // Step 1: Convert the base64-encoded frameID to an array of 22 bytes.
-  // We use 'base64url' instead of 'base64' because frameID is encoded URL-friendly.
-  // The first 16 bytes contain the FileID.
-  const buf = Buffer.from(fileIDChunk, 'base64url');
-
-  // Convert the FileID bytes into base64 with URL-friendly encoding.
-  // We have to manually append '==' since we use the FileID string for
-  // comparing / looking up the FileID strings in the ES indices, which have
-  // the '==' appended.
-  // We may want to remove '==' in the future to reduce the uncompressed storage size by 10%.
-  fileID = buf.toString('base64url', 0, 16) + '==';
-  frameIDToFileIDCache.set(fileIDChunk, fileID);
-  return fileID;
-}
-
-// extractFileIDArrayFromFrameIDArray extracts all FileIDs from the array of FrameIDs
-// and returns them as an array of base64url encoded strings. The order of this array
-// corresponds to the order of the input array.
-function extractFileIDArrayFromFrameIDArray(frameIDs: string[]): string[] {
-  const fileIDs = Array<string>(frameIDs.length);
-  for (let i = 0; i < frameIDs.length; i++) {
-    fileIDs[i] = extractFileIDFromFrameID(frameIDs[i]);
-  }
-  return fileIDs;
-}
+import { mgetStackTraces, searchStackTraces } from './stacktrace';
 
 function getNumberOfUniqueStacktracesWithoutLeafNode(
   stackTraces: Map<StackTraceID, StackTrace>,
@@ -199,123 +163,9 @@ async function queryFlameGraph(
   }
 
   // profiling-stacktraces is configured with 16 shards
-  const nQueries = 1;
-  const stackTraces = new Map<StackTraceID, StackTrace>();
-  const stackFrameDocIDs = new Set<string>(); // Set of unique FrameIDs
-  const executableDocIDs = new Set<string>(); // Set of unique executable FileIDs.
-  const stackTraceIDs = [...stackTraceEvents.keys()];
-  const chunkSize = Math.floor(stackTraceEvents.size / nQueries);
-  let chunks = chunk(stackTraceIDs, chunkSize);
-
-  if (chunks.length !== nQueries) {
-    // The last array element contains the remainder, just drop it as irrelevant.
-    chunks = chunks.slice(0, nQueries);
-  }
-
-  const stackResponses = await logExecutionLatency(
-    logger,
-    (testing ? 'search' : 'mget') + ' query for ' + stackTraceEvents.size + ' stacktraces',
-    async () => {
-      return await Promise.all(
-        chunks.map((ids) => {
-          if (testing) {
-            return client.search(
-              {
-                index: 'profiling-stacktraces',
-                size: stackTraceEvents.size,
-                sort: '_doc',
-                query: {
-                  ids: {
-                    values: [...ids],
-                  },
-                },
-                _source: false,
-                docvalue_fields: ['FrameID', 'Type'],
-              },
-              {
-                querystring: {
-                  filter_path: 'hits.hits._id,hits.hits.fields.FrameID,hits.hits.fields.Type',
-                  pre_filter_shard_size: 1,
-                },
-              }
-            );
-          } else {
-            return client.mget({
-              index: 'profiling-stacktraces',
-              ids,
-              realtime: false,
-              _source_includes: ['FrameID', 'Type'],
-            });
-          }
-        })
-      );
-    }
-  );
-
-  let totalFrames = 0;
-  await logExecutionLatency(logger, 'processing data', async () => {
-    if (testing) {
-      const traces = stackResponses.flatMap((response) => response.body.hits.hits);
-      for (const trace of traces) {
-        const frameIDs = trace.fields.FrameID as string[];
-        const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
-        stackTraces.set(trace._id, {
-          FileID: fileIDs,
-          FrameID: frameIDs,
-          Type: trace.fields.Type,
-        });
-        for (const frameID of frameIDs) {
-          stackFrameDocIDs.add(frameID);
-        }
-        for (const fileID of fileIDs) {
-          executableDocIDs.add(fileID);
-        }
-      }
-    } else {
-      // flatMap() is significantly slower than an explicit for loop
-      for (const res of stackResponses) {
-        for (const trace of res.body.docs) {
-          // Sometimes we don't find the trace.
-          // This is due to ES delays writing (data is not immediately seen after write).
-          // Also, ES doesn't know about transactions.
-          if (trace.found) {
-            const traceid = trace._id as StackTraceID;
-            let stackTrace = traceLRU.get(traceid) as StackTrace;
-            if (!stackTrace) {
-              const frameIDs = trace._source.FrameID as string[];
-              stackTrace = {
-                FileID: extractFileIDArrayFromFrameIDArray(frameIDs),
-                FrameID: frameIDs,
-                Type: trace._source.Type,
-              };
-              traceLRU.set(traceid, stackTrace);
-            }
-
-            totalFrames += stackTrace.FrameID.length;
-            stackTraces.set(traceid, stackTrace);
-            for (const frameID of stackTrace.FrameID) {
-              stackFrameDocIDs.add(frameID);
-            }
-            for (const fileID of stackTrace.FileID) {
-              executableDocIDs.add(fileID);
-            }
-          }
-        }
-      }
-    }
-  });
-
-  if (stackTraces.size !== 0) {
-    logger.info('Average size of stacktrace: ' + totalFrames / stackTraces.size);
-  }
-
-  if (stackTraces.size < stackTraceEvents.size) {
-    logger.info(
-      'failed to find ' +
-        (stackTraceEvents.size - stackTraces.size) +
-        ' stacktraces (todo: find out why)'
-    );
-  }
+  const { stackTraces, stackFrameDocIDs, executableDocIDs } = testing
+    ? await searchStackTraces(logger, client, stackTraceEvents)
+    : await mgetStackTraces(logger, client, stackTraceEvents);
 
   /*
     logger.info(

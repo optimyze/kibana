@@ -81,7 +81,9 @@ export async function topNElasticSearchQuery(
   logger.info('events total count: ' + totalCount);
   logger.info('unique stacktraces: ' + stackTraceEvents.size);
 
-  const topN = createTopNBucketsByDate(resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate);
+  const topN = createTopNBucketsByDate(
+    resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate
+  );
 
   if (searchField !== 'StackTraceID') {
     return response.ok({
