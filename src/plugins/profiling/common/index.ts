@@ -46,7 +46,7 @@ export function getTopN(obj: any) {
   return data;
 }
 
-export function groupSamplesByCategory(samples) {
+export function groupSamplesByCategory(samples: any) {
   const series = new Map();
   for (let i = 0; i < samples.length; i++) {
     const v = samples[i];
