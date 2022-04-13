@@ -195,12 +195,6 @@ export function mapFlamechart(src: any) {
   extendFlameGraph(root, 0);
 
   const newRoot = flattenTree(root, 0);
-  [].map((node) => ({
-    id: node.id,
-    value: node.value,
-    depth: node.depth,
-    pathFromRoot: node.pathFromRoot,
-  }));
 
   return {
     leaves: newRoot,
