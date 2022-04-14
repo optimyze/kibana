@@ -14,7 +14,7 @@ import {
 } from '@elastic/elasticsearch/lib/api/types';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { fromMapToRecord, getRoutePaths } from '../../common';
-import { groupStackTracesByStackFrameMetadata, StackTraceID } from '../../common/profiling';
+import { groupStackFrameMetadataByStackTrace, StackTraceID } from '../../common/profiling';
 import { createTopNBucketsByDate } from '../../common/topn';
 import { findDownsampledIndex } from './downsampling';
 import { logExecutionLatency } from './logger';
@@ -104,7 +104,7 @@ export async function topNElasticSearchQuery(
     mgetExecutables(logger, client, executableDocIDs),
   ]).then(([stackFrames, executables]) => {
     const metadata = fromMapToRecord(
-      groupStackTracesByStackFrameMetadata(stackTraces, stackFrames, executables)
+      groupStackFrameMetadataByStackTrace(stackTraces, stackFrames, executables)
     );
     return response.ok({
       body: {

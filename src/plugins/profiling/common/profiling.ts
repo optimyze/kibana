@@ -96,11 +96,11 @@ export function createStackFrameMetadata(
   return metadata;
 }
 
-// groupStackTracesByStackFrameMetadata collects all of the per-stack-frame
+// groupStackFrameMetadataByStackTrace collects all of the per-stack-frame
 // metadata for a given set of trace IDs and their respective stack frames.
 //
 // This is similar to GetTraceMetaData in pf-storage-backend/storagebackend/storagebackendv1/reads_webservice.go
-export function groupStackTracesByStackFrameMetadata(
+export function groupStackFrameMetadataByStackTrace(
   stackTraces: Map<StackTraceID, StackTrace>,
   stackFrames: Map<StackFrameID, StackFrame>,
   executables: Map<FileID, Executable>

@@ -19,7 +19,7 @@ import {
   StackFrame,
   Executable,
   createStackFrameMetadata,
-  groupStackTracesByStackFrameMetadata,
+  groupStackFrameMetadataByStackTrace,
 } from './profiling';
 
 interface PixiFlameGraph extends CallerCalleeNode {
@@ -158,7 +158,7 @@ export class FlameGraph {
 
   toPixi(): PixiFlameGraph {
     const rootFrame = createStackFrameMetadata();
-    const frameMetadataForTraces = groupStackTracesByStackFrameMetadata(
+    const frameMetadataForTraces = groupStackFrameMetadataByStackTrace(
       this.stacktraces,
       this.stackframes,
       this.executables
