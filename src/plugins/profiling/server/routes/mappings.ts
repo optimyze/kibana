@@ -139,12 +139,12 @@ function getBlockName(obj: any) {
   return getExeFileName(obj);
 }
 
-const sortFlamechartBySamples = function (a: any, b: any) {
+const compareFlamechartSample = function (a: any, b: any) {
   return b.Samples - a.Samples;
 };
 
 const sortFlamechart = function (data: any) {
-  data.Callees.sort(sortFlamechartBySamples);
+  data.Callees.sort(compareFlamechartSample);
   return data;
 };
 
