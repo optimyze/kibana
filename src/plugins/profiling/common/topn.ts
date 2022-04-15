@@ -6,18 +6,21 @@
  * Side Public License, v 1.
  */
 
-import { AggregationsHistogramAggregate, AggregationsHistogramBucket } from '@elastic/elasticsearch/lib/api/types';
+import {
+  AggregationsHistogramAggregate,
+  AggregationsHistogramBucket,
+} from '@elastic/elasticsearch/lib/api/types';
 
-import { StackFrameMetadata } from "./profiling"
+import { StackFrameMetadata } from './profiling';
 
 type TopNBucket = {
-    Value: string;
-    Count: number;
-}
+  Value: string;
+  Count: number;
+};
 
 type TopNBucketsByDate = {
-    TopN: Record<number, TopNBucket[]>;
-}
+  TopN: Record<number, TopNBucket[]>;
+};
 
 type TopNContainers = TopNBucketsByDate;
 type TopNDeployments = TopNBucketsByDate;
@@ -25,27 +28,27 @@ type TopNHosts = TopNBucketsByDate;
 type TopNThreads = TopNBucketsByDate;
 
 type TopNTraces = TopNBucketsByDate & {
-    Metadata: Record<string, StackFrameMetadata[]>;
-}
+  Metadata: Record<string, StackFrameMetadata[]>;
+};
 
 type TopN = TopNContainers | TopNDeployments | TopNHosts | TopNThreads | TopNTraces;
 
-export function createTopNBucketsByDate(histogram: AggregationsHistogramAggregate): TopNBucketsByDate {
-    const topNBucketsByDate: Record<number, TopNBucket[]> = {};
+export function createTopNBucketsByDate(
+  histogram: AggregationsHistogramAggregate
+): TopNBucketsByDate {
+  const topNBucketsByDate: Record<number, TopNBucket[]> = {};
 
-    histogram.buckets.values
-    histogram.buckets.forEach(
-        (bucket: AggregationsHistogramBucket) => {
-            const key = bucket.key / 1000;
-            topNBucketsByDate[key] = [];
-            bucket.group_by.buckets.forEach((item: any) => {
-                topNBucketsByDate[key].push({
-                    Value: item.key,
-                    Count: item.count.value,
-                });
-            });
-        }
-    );
+  const histogramBuckets = (histogram?.buckets as AggregationsHistogramBucket[]) ?? [];
+  for (let i = 0; i < histogramBuckets.length; i++) {
+    const key = histogramBuckets[i].key / 1000;
+    topNBucketsByDate[key] = [];
+    histogramBuckets[i].group_by.buckets.forEach((item: any) => {
+      topNBucketsByDate[key].push({
+        Value: item.key,
+        Count: item.count.value,
+      });
+    });
+  }
 
-    return { TopN: topNBucketsByDate };
+  return { TopN: topNBucketsByDate };
 }

@@ -67,9 +67,8 @@ export async function topNElasticSearchQuery(
     }
   );
 
-  const topN = createTopNBucketsByDate(
-    resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate
-  );
+  const histogram = resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate;
+  const topN = createTopNBucketsByDate(histogram);
 
   if (searchField !== 'StackTraceID') {
     return response.ok({
@@ -80,14 +79,15 @@ export async function topNElasticSearchQuery(
   let totalCount = 0;
   const stackTraceEvents = new Map<StackTraceID, number>();
 
-  (resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate)?.buckets?.forEach(
-    (timeInterval: AggregationsHistogramBucket) => {
-      totalCount += timeInterval.doc_count;
-      timeInterval.group_by.buckets.forEach((stackTraceItem: AggregationsStringTermsBucket) => {
+  const histogramBuckets = (histogram?.buckets as AggregationsHistogramBucket[]) ?? [];
+  for (let i = 0; i < histogramBuckets.length; i++) {
+    totalCount += histogramBuckets[i].doc_count;
+    histogramBuckets[i].group_by.buckets.forEach(
+      (stackTraceItem: AggregationsStringTermsBucket) => {
         stackTraceEvents.set(stackTraceItem.key, stackTraceItem.count.value);
-      });
-    }
-  );
+      }
+    );
+  }
 
   logger.info('events total count: ' + totalCount);
   logger.info('unique stacktraces: ' + stackTraceEvents.size);

@@ -236,7 +236,8 @@ export async function mgetStackFrames(
   const stackFrames = new Map<StackFrameID, StackFrame>();
   let framesFound = 0;
   await logExecutionLatency(logger, 'processing data', async () => {
-    for (const frame of resStackFrames.body.docs) {
+    const docs = resStackFrames.body?.docs ?? [];
+    for (const frame of docs) {
       if (frame.found) {
         stackFrames.set(frame._id, frame._source);
         framesFound++;
@@ -277,7 +278,8 @@ export async function mgetExecutables(
   // Create a lookup map StackFrameID -> StackFrame.
   const executables = new Map<FileID, Executable>();
   await logExecutionLatency(logger, 'processing data', async () => {
-    for (const exe of resExecutables.body.docs) {
+    const docs = resExecutables.body?.docs ?? [];
+    for (const exe of docs) {
       if (exe.found) {
         executables.set(exe._id, exe._source);
       } else {
