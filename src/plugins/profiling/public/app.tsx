@@ -37,6 +37,7 @@ import { Services } from './services';
 type Props = Services;
 
 function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) {
+  const [index, setIndex] = useState('profiling-events-all');
   const [projectID, setProjectID] = useState(5);
 
   const [topn, setTopN] = useState({
@@ -47,6 +48,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
   const [elasticFlamegraph, setElasticFlamegraph] = useState({ leaves: [] });
   const [pixiFlamegraph, setPixiFlamegraph] = useState({});
 
+  const updateIndex = (idx: string) => setIndex(idx);
   const updateProjectID = (n: number) => setProjectID(n);
 
   const tabs = [
@@ -58,7 +60,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
           <EuiSpacer />
           <TopNContext.Provider value={topn}>
             <StackTraceNavigation
-              index={'profiling-events-all'}
+              index={index}
               projectID={projectID}
               fetchTopN={fetchTopN}
               setTopN={setTopN}
@@ -77,7 +79,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
           <EuiSpacer />
           <FlameGraphContext.Provider value={elasticFlamegraph}>
             <FlameGraphNavigation
-              index={'profiling-events-all'}
+              index={index}
               projectID={projectID}
               getter={fetchElasticFlamechart}
               setter={setElasticFlamegraph}
@@ -95,7 +97,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
           <EuiSpacer />
           <FlameGraphContext.Provider value={pixiFlamegraph}>
             <FlameGraphNavigation
-              index={'profiling-events-all'}
+              index={index}
               projectID={projectID}
               getter={fetchPixiFlamechart}
               setter={setPixiFlamegraph}
@@ -114,7 +116,12 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
           paddingSize="s"
           pageTitle="Continuous Profiling"
           rightSideItems={[
-            <SettingsFlyout defaultProjectID={projectID} updateProjectID={updateProjectID} />,
+            <SettingsFlyout
+              defaultIndex={index}
+              updateIndex={updateIndex}
+              defaultProjectID={projectID}
+              updateProjectID={updateProjectID}
+            />,
           ]}
         />
         <EuiPageContent>

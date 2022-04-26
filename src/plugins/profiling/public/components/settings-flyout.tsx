@@ -26,11 +26,20 @@ import {
 } from '@elastic/eui';
 
 interface SettingsFlyoutProps {
+  defaultIndex: string;
+  updateIndex: (idx: string) => void;
+
   defaultProjectID: number;
   updateProjectID: (n: number) => void;
 }
 
-export function SettingsFlyout({ defaultProjectID, updateProjectID }: SettingsFlyoutProps) {
+export function SettingsFlyout({
+  defaultIndex,
+  updateIndex,
+  defaultProjectID,
+  updateProjectID,
+}: SettingsFlyoutProps) {
+  const [index, setIndex] = useState(defaultIndex);
   const [projectID, setProjectID] = useState(defaultProjectID);
   const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
   const flyoutTitleId = useGeneratedHtmlId({
@@ -42,10 +51,12 @@ export function SettingsFlyout({ defaultProjectID, updateProjectID }: SettingsFl
   const closeFlyout = () => setIsFlyoutVisible(false);
 
   const saveFlyout = () => {
+    updateIndex(index);
     updateProjectID(projectID);
     setIsFlyoutVisible(false);
   };
 
+  const onIndexChange = (e: any) => setIndex(e.target.value);
   const onProjectIDChange = (e: any) => setProjectID(e.target.value);
 
   return (
@@ -61,6 +72,9 @@ export function SettingsFlyout({ defaultProjectID, updateProjectID }: SettingsFl
           </EuiFlyoutHeader>
           <EuiFlyoutBody>
             <EuiForm component="form">
+              <EuiFormRow label="Index">
+                <EuiFieldText name="index" value={index} onChange={onIndexChange} />
+              </EuiFormRow>
               <EuiFormRow label="Project ID">
                 <EuiFieldText name="projectID" value={projectID} onChange={onProjectIDChange} />
               </EuiFormRow>
