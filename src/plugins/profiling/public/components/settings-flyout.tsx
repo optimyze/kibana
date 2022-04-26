@@ -84,13 +84,22 @@ export function SettingsFlyout({
           </EuiFlyoutHeader>
           <EuiFlyoutBody>
             <EuiForm component="form">
-              <EuiFormRow label="Index">
+              <EuiFormRow
+                label="Index"
+                helpText="This is the primary Elasticsearch index used before sampling."
+              >
                 <EuiFieldText name="index" value={index} onChange={onIndexChange} />
               </EuiFormRow>
-              <EuiFormRow label="Project ID">
+              <EuiFormRow
+                label="Project ID"
+                helpText="This is the project ID as defined by the host agent."
+              >
                 <EuiFieldText name="projectID" value={projectID} onChange={onProjectIDChange} />
               </EuiFormRow>
-              <EuiFormRow label="N">
+              <EuiFormRow
+                label="N"
+                helpText="This is the maximum number of items per histogram bucket (Stack Traces) or is currently ignored (FlameGraph)."
+              >
                 <EuiFieldText name="n" value={n} onChange={onNChange} />
               </EuiFormRow>
             </EuiForm>
