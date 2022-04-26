@@ -11,10 +11,11 @@ import { getRoutePaths } from '../common';
 
 export interface Services {
   fetchTopN: (
+    type: string,
     index: string,
     projectID: number,
-    type: string,
-    seconds: string,
+    timeFrom: number,
+    timeTo: number,
     n: number
   ) => Promise<any[] | HttpFetchError>;
   fetchElasticFlamechart: (
@@ -38,19 +39,19 @@ export function getServices(core: CoreStart): Services {
 
   return {
     fetchTopN: async (
+      type: string,
       index: string,
       projectID: number,
-      type: string,
-      seconds: string,
+      timeFrom: number,
+      timeTo: number,
       n: number
     ) => {
       try {
-        const unixTime = Math.floor(Date.now() / 1000);
         const query: HttpFetchQuery = {
           index,
           projectID,
-          timeFrom: unixTime - parseInt(seconds, 10),
-          timeTo: unixTime,
+          timeFrom,
+          timeTo,
           n,
         };
         return await core.http.get(`${paths.TopN}/${type}`, { query });
