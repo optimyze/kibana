@@ -10,22 +10,34 @@ import { CoreStart, HttpFetchError, HttpFetchQuery } from 'kibana/public';
 import { getRoutePaths } from '../common';
 
 export interface Services {
-  fetchTopN: (type: string, seconds: string) => Promise<any[] | HttpFetchError>;
-  fetchElasticFlamechart: (timeFrom: number, timeTo: number) => Promise<any[] | HttpFetchError>;
-  fetchElasticFlamechart2: (timeFrom: number, timeTo: number) => Promise<any[] | HttpFetchError>;
-  fetchPixiFlamechart: (timeFrom: number, timeTo: number) => Promise<any[] | HttpFetchError>;
+  fetchTopN: (projectID: number, type: string, seconds: string) => Promise<any[] | HttpFetchError>;
+  fetchElasticFlamechart: (
+    projectID: number,
+    timeFrom: number,
+    timeTo: number
+  ) => Promise<any[] | HttpFetchError>;
+  fetchElasticFlamechart2: (
+    projectID: number,
+    timeFrom: number,
+    timeTo: number
+  ) => Promise<any[] | HttpFetchError>;
+  fetchPixiFlamechart: (
+    projectID: number,
+    timeFrom: number,
+    timeTo: number
+  ) => Promise<any[] | HttpFetchError>;
 }
 
 export function getServices(core: CoreStart): Services {
   const paths = getRoutePaths();
 
   return {
-    fetchTopN: async (type: string, seconds: string) => {
+    fetchTopN: async (projectID: number, type: string, seconds: string) => {
       try {
         const unixTime = Math.floor(Date.now() / 1000);
         const query: HttpFetchQuery = {
           index: 'profiling-events-all',
-          projectID: 5,
+          projectID,
           timeFrom: unixTime - parseInt(seconds, 10),
           timeTo: unixTime,
           // TODO remove hard-coded value for topN items length and expose it through the UI
@@ -37,11 +49,11 @@ export function getServices(core: CoreStart): Services {
       }
     },
 
-    fetchElasticFlamechart: async (timeFrom: number, timeTo: number) => {
+    fetchElasticFlamechart: async (projectID: number, timeFrom: number, timeTo: number) => {
       try {
         const query: HttpFetchQuery = {
           index: 'profiling-events-all',
-          projectID: 5,
+          projectID,
           timeFrom,
           timeTo,
           // TODO remove hard-coded value for topN items length and expose it through the UI
@@ -53,11 +65,11 @@ export function getServices(core: CoreStart): Services {
       }
     },
 
-    fetchElasticFlamechart2: async (timeFrom: number, timeTo: number) => {
+    fetchElasticFlamechart2: async (projectID: number, timeFrom: number, timeTo: number) => {
       try {
         const query: HttpFetchQuery = {
           index: 'profiling-events2',
-          projectID: 5,
+          projectID,
           timeFrom,
           timeTo,
           // TODO remove hard-coded value for topN items length and expose it through the UI
@@ -69,11 +81,11 @@ export function getServices(core: CoreStart): Services {
       }
     },
 
-    fetchPixiFlamechart: async (timeFrom: number, timeTo: number) => {
+    fetchPixiFlamechart: async (projectID: number, timeFrom: number, timeTo: number) => {
       try {
         const query: HttpFetchQuery = {
           index: 'profiling-events-all',
-          projectID: 5,
+          projectID,
           timeFrom,
           timeTo,
           // TODO remove hard-coded value for topN items length and expose it through the UI

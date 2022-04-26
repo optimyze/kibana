@@ -83,7 +83,7 @@ export const FlameGraphNavigation = ({ getter, setter }) => {
   useEffect(() => {
     console.log(new Date().toISOString(), timeRange);
     console.log(new Date().toISOString(), 'started payload retrieval');
-    getter(timeRange.unixStart, timeRange.unixEnd).then((response) => {
+    getter(5, timeRange.unixStart, timeRange.unixEnd).then((response) => {
       console.log(new Date().toISOString(), 'finished payload retrieval');
       setter(response);
       console.log(new Date().toISOString(), 'updated local state');

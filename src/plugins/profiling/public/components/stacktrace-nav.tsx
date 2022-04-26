@@ -101,7 +101,7 @@ export const StackTraceNavigation = ({ fetchTopN, setTopN }) => {
     });
 
     console.log(new Date().toISOString(), 'started payload retrieval');
-    fetchTopN(topnValue[0].value, dateValue[0].value).then((response) => {
+    fetchTopN(5, topnValue[0].value, dateValue[0].value).then((response) => {
       console.log(new Date().toISOString(), 'finished payload retrieval');
       const samples = getTopN(response);
       const series = groupSamplesByCategory(samples);
