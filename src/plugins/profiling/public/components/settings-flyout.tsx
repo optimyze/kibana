@@ -26,6 +26,8 @@ import {
 } from '@elastic/eui';
 
 interface SettingsFlyoutProps {
+  title: string;
+
   defaultIndex: string;
   updateIndex: (idx: string) => void;
 
@@ -37,6 +39,7 @@ interface SettingsFlyoutProps {
 }
 
 export function SettingsFlyout({
+  title,
   defaultIndex,
   updateIndex,
   defaultProjectID,
@@ -70,12 +73,12 @@ export function SettingsFlyout({
 
   return (
     <div>
-      <EuiButton onClick={showFlyout}>Settings</EuiButton>
+      <EuiButton onClick={showFlyout}>{title}</EuiButton>
       {isFlyoutVisible && (
         <EuiFlyout ownFocus onClose={closeFlyout} hideCloseButton aria-labelledby={flyoutTitleId}>
           <EuiFlyoutHeader hasBorder>
             <EuiTitle size="m">
-              <h2 id={flyoutTitleId}>Settings</h2>
+              <h2 id={flyoutTitleId}>{title}</h2>
             </EuiTitle>
             <EuiSpacer size="s" />
           </EuiFlyoutHeader>

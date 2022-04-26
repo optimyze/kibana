@@ -202,6 +202,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
               commonlyUsedRanges={commonlyUsedRanges}
             />,
             <SettingsFlyout
+              title={'Settings'}
               defaultIndex={index}
               updateIndex={updateIndex}
               defaultProjectID={projectID}
