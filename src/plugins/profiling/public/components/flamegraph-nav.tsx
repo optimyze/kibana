@@ -67,7 +67,7 @@ function buildTimeRange(start: string, end: string): TimeRange {
   };
 }
 
-export const FlameGraphNavigation = ({ getter, setter }) => {
+export const FlameGraphNavigation = ({ projectID, getter, setter }) => {
   const defaultTimeRange = buildTimeRange(commonlyUsedRanges[0].start, commonlyUsedRanges[0].end);
   const [timeRange, setTimeRange] = useState(defaultTimeRange);
 
@@ -83,12 +83,12 @@ export const FlameGraphNavigation = ({ getter, setter }) => {
   useEffect(() => {
     console.log(new Date().toISOString(), timeRange);
     console.log(new Date().toISOString(), 'started payload retrieval');
-    getter(5, timeRange.unixStart, timeRange.unixEnd).then((response) => {
+    getter(projectID, timeRange.unixStart, timeRange.unixEnd).then((response) => {
       console.log(new Date().toISOString(), 'finished payload retrieval');
       setter(response);
       console.log(new Date().toISOString(), 'updated local state');
     });
-  }, [timeRange]);
+  }, [projectID, timeRange]);
 
   return (
     <div>

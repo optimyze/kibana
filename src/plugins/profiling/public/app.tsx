@@ -42,7 +42,7 @@ function App({
   fetchElasticFlamechart2,
   fetchPixiFlamechart,
 }: Props) {
-  const [projectID, setProjectID] = useState(1);
+  const [projectID, setProjectID] = useState(5);
 
   const [topn, setTopN] = useState({
     samples: [],
@@ -63,7 +63,7 @@ function App({
         <>
           <EuiSpacer />
           <TopNContext.Provider value={topn}>
-            <StackTraceNavigation fetchTopN={fetchTopN} setTopN={setTopN} />
+            <StackTraceNavigation projectID={projectID} fetchTopN={fetchTopN} setTopN={setTopN} />
             <StackedBarChart id="topn" name="topn" height={400} x="x" y="y" category="g" />
             <ChartGrid maximum={10} />
           </TopNContext.Provider>
@@ -77,7 +77,11 @@ function App({
         <>
           <EuiSpacer />
           <FlameGraphContext.Provider value={elasticFlamegraph}>
-            <FlameGraphNavigation getter={fetchElasticFlamechart} setter={setElasticFlamegraph} />
+            <FlameGraphNavigation
+              projectID={projectID}
+              getter={fetchElasticFlamechart}
+              setter={setElasticFlamegraph}
+            />
             <FlameGraph id="flamechart" height={600} />
           </FlameGraphContext.Provider>
         </>
@@ -90,7 +94,11 @@ function App({
         <>
           <EuiSpacer />
           <FlameGraphContext.Provider value={elasticFlamegraph2}>
-            <FlameGraphNavigation getter={fetchElasticFlamechart2} setter={setElasticFlamegraph2} />
+            <FlameGraphNavigation
+              projectID={projectID}
+              getter={fetchElasticFlamechart2}
+              setter={setElasticFlamegraph2}
+            />
             <FlameGraph id="flamechart" height={600} />
           </FlameGraphContext.Provider>
         </>
@@ -103,7 +111,11 @@ function App({
         <>
           <EuiSpacer />
           <FlameGraphContext.Provider value={pixiFlamegraph}>
-            <FlameGraphNavigation getter={fetchPixiFlamechart} setter={setPixiFlamegraph} />
+            <FlameGraphNavigation
+              projectID={projectID}
+              getter={fetchPixiFlamechart}
+              setter={setPixiFlamegraph}
+            />
             <PixiFlamechart projectID={projectID.toString()} />
           </FlameGraphContext.Provider>
         </>
