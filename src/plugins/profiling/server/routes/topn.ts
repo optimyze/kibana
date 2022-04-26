@@ -136,7 +136,10 @@ export function queryTopNCommon(
     },
     async (context, request, response) => {
       const { index, projectID, timeFrom, timeTo, n } = request.query;
-      const client = context.core.elasticsearch.client.asCurrentUser;
+      const client =
+        typeof context.core.then === 'function'
+          ? (await context.core).elasticsearch.client.asCurrentUser
+          : context.core.elasticsearch.client.asCurrentUser;
 
       try {
         return await topNElasticSearchQuery(

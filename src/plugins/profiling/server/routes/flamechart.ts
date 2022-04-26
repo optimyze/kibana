@@ -6,8 +6,8 @@
  * Side Public License, v 1.
  */
 import { schema } from '@kbn/config-schema';
-import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
-import type { DataRequestHandlerContext } from '../../../data/server';
+import type { ElasticsearchClient, IRouter, Logger } from '@kbn/core/server';
+import type { DataRequestHandlerContext } from '@kbn/data-plugin/server';
 import { getRoutePaths } from '../../common';
 import { FlameGraph } from '../../common/flamegraph';
 import { StackTraceID } from '../../common/profiling';
@@ -69,57 +69,30 @@ async function queryFlameGraph(
       return await client.search(
         {
           index: eventsIndex.name,
-          size: 0,
+          track_total_hits: false,
+          size: 150000, // should be max 100k, but might be more. Better be on the safe side.
           query: filter,
-          aggs: {
-            group_by: {
-              composite: {
-                size: 100000, // This is the upper limit of entries per event index.
-                sources: [
-                  {
-                    traceid: {
-                      terms: {
-                        field: 'StackTraceID',
-                      },
-                    },
-                  },
-                ],
-              },
-              aggs: {
-                count: {
-                  sum: {
-                    field: 'Count',
-                  },
-                },
-              },
-            },
-            total_count: {
-              sum: {
-                field: 'Count',
-              },
-            },
-          },
         },
         {
           // Adrien and Dario found out this is a work-around for some bug in 8.1.
           // It reduces the query time by avoiding unneeded searches.
           querystring: {
             pre_filter_shard_size: 1,
-            filter_path:
-              'aggregations.group_by.buckets.key,aggregations.group_by.buckets.count,aggregations.total_count,_shards.failures',
+            filter_path: 'hits.hits._source.StackTraceID,hits.hits._source.Count,_shards.failures',
           },
         }
       );
     }
   );
 
-  let totalCount: number = resEvents.body.aggregations?.total_count.value;
-  let stackTraceEvents = new Map<StackTraceID, number>();
+  let totalCount: number = 0;
+  const stackTraceEvents = new Map<StackTraceID, number>();
 
   await logExecutionLatency(logger, 'processing events data', async () => {
-    resEvents.body.aggregations?.group_by.buckets.forEach((item: any) => {
-      const traceid: StackTraceID = item.key.traceid;
-      stackTraceEvents.set(traceid, item.count.value);
+    ('body' in resEvents ? resEvents.body.hits.hits : resEvents.hits.hits).forEach((item: any) => {
+      const traceid: StackTraceID = item._source.StackTraceID;
+      stackTraceEvents.set(traceid, item._source.Count + stackTraceEvents.get(traceid) ?? 0);
+      totalCount += item._source.Count;
     });
   });
   logger.info('events total count: ' + totalCount);
@@ -180,7 +153,10 @@ export function registerFlameChartElasticSearchRoute(
       const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
 
       try {
-        const esClient = context.core.elasticsearch.client.asCurrentUser;
+        const esClient =
+          typeof context.core.then === 'function'
+            ? (await context.core).elasticsearch.client.asCurrentUser
+            : context.core.elasticsearch.client.asCurrentUser;
         const filter = newProjectTimeQuery(projectID!, timeFrom!, timeTo!);
 
         const flamegraph = await queryFlameGraph(
@@ -231,7 +207,10 @@ export function registerFlameChartPixiSearchRoute(
       const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
 
       try {
-        const esClient = context.core.elasticsearch.client.asCurrentUser;
+        const esClient =
+          typeof context.core.then === 'function'
+            ? (await context.core).elasticsearch.client.asCurrentUser
+            : context.core.elasticsearch.client.asCurrentUser;
         const filter = newProjectTimeQuery(projectID!, timeFrom!, timeTo!);
 
         const flamegraph = await queryFlameGraph(
