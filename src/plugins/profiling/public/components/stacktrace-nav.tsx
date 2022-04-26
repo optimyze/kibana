@@ -12,7 +12,7 @@ import { EuiButtonGroup, EuiSpacer } from '@elastic/eui';
 
 import { getTopN, groupSamplesByCategory } from '../../common';
 
-export const StackTraceNavigation = ({ index, projectID, fetchTopN, setTopN }) => {
+export const StackTraceNavigation = ({ index, projectID, n, fetchTopN, setTopN }) => {
   const topnButtonGroupPrefix = 'topnButtonGroup';
 
   const topnButtons = [
@@ -101,7 +101,7 @@ export const StackTraceNavigation = ({ index, projectID, fetchTopN, setTopN }) =
     });
 
     console.log(new Date().toISOString(), 'started payload retrieval');
-    fetchTopN(index, projectID, topnValue[0].value, dateValue[0].value).then((response) => {
+    fetchTopN(index, projectID, topnValue[0].value, dateValue[0].value, n).then((response) => {
       console.log(new Date().toISOString(), 'finished payload retrieval');
       const samples = getTopN(response);
       const series = groupSamplesByCategory(samples);

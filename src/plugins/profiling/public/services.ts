@@ -14,19 +14,22 @@ export interface Services {
     index: string,
     projectID: number,
     type: string,
-    seconds: string
+    seconds: string,
+    n: number
   ) => Promise<any[] | HttpFetchError>;
   fetchElasticFlamechart: (
     index: string,
     projectID: number,
     timeFrom: number,
-    timeTo: number
+    timeTo: number,
+    n: number
   ) => Promise<any[] | HttpFetchError>;
   fetchPixiFlamechart: (
     index: string,
     projectID: number,
     timeFrom: number,
-    timeTo: number
+    timeTo: number,
+    n: number
   ) => Promise<any[] | HttpFetchError>;
 }
 
@@ -34,7 +37,13 @@ export function getServices(core: CoreStart): Services {
   const paths = getRoutePaths();
 
   return {
-    fetchTopN: async (index: string, projectID: number, type: string, seconds: string) => {
+    fetchTopN: async (
+      index: string,
+      projectID: number,
+      type: string,
+      seconds: string,
+      n: number
+    ) => {
       try {
         const unixTime = Math.floor(Date.now() / 1000);
         const query: HttpFetchQuery = {
@@ -42,8 +51,7 @@ export function getServices(core: CoreStart): Services {
           projectID,
           timeFrom: unixTime - parseInt(seconds, 10),
           timeTo: unixTime,
-          // TODO remove hard-coded value for topN items length and expose it through the UI
-          n: 100,
+          n,
         };
         return await core.http.get(`${paths.TopN}/${type}`, { query });
       } catch (e) {
@@ -55,7 +63,8 @@ export function getServices(core: CoreStart): Services {
       index: string,
       projectID: number,
       timeFrom: number,
-      timeTo: number
+      timeTo: number,
+      n: number
     ) => {
       try {
         const query: HttpFetchQuery = {
@@ -63,8 +72,7 @@ export function getServices(core: CoreStart): Services {
           projectID,
           timeFrom,
           timeTo,
-          // TODO remove hard-coded value for topN items length and expose it through the UI
-          n: 100,
+          n,
         };
         return await core.http.get(paths.FlamechartElastic, { query });
       } catch (e) {
@@ -76,7 +84,8 @@ export function getServices(core: CoreStart): Services {
       index: string,
       projectID: number,
       timeFrom: number,
-      timeTo: number
+      timeTo: number,
+      n: number
     ) => {
       try {
         const query: HttpFetchQuery = {
@@ -84,8 +93,7 @@ export function getServices(core: CoreStart): Services {
           projectID,
           timeFrom,
           timeTo,
-          // TODO remove hard-coded value for topN items length and expose it through the UI
-          n: 100,
+          n,
         };
         return await core.http.get(paths.FlamechartPixi, { query });
       } catch (e) {

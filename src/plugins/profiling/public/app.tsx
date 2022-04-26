@@ -62,6 +62,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
             <StackTraceNavigation
               index={index}
               projectID={projectID}
+              n={100}
               fetchTopN={fetchTopN}
               setTopN={setTopN}
             />
@@ -81,6 +82,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
             <FlameGraphNavigation
               index={index}
               projectID={projectID}
+              n={100}
               getter={fetchElasticFlamechart}
               setter={setElasticFlamegraph}
             />
@@ -99,6 +101,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
             <FlameGraphNavigation
               index={index}
               projectID={projectID}
+              n={100}
               getter={fetchPixiFlamechart}
               setter={setPixiFlamegraph}
             />
