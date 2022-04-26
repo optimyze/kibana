@@ -15,9 +15,12 @@ import {
   EuiPageBody,
   EuiPageContent,
   EuiPageContentBody,
+  EuiPageHeader,
   EuiSpacer,
   EuiTabbedContent,
 } from '@elastic/eui';
+
+import { SettingsFlyout } from './components/settings-flyout';
 
 import { TopNContext } from './components/contexts/topn';
 import { StackTraceNavigation } from './components/stacktrace-nav';
@@ -39,6 +42,8 @@ function App({
   fetchElasticFlamechart2,
   fetchPixiFlamechart,
 }: Props) {
+  const [projectID, setProjectID] = useState(1);
+
   const [topn, setTopN] = useState({
     samples: [],
     series: new Map(),
@@ -47,6 +52,8 @@ function App({
   const [elasticFlamegraph, setElasticFlamegraph] = useState({ leaves: [] });
   const [elasticFlamegraph2, setElasticFlamegraph2] = useState({ leaves: [] });
   const [pixiFlamegraph, setPixiFlamegraph] = useState({});
+
+  const updateProjectID = (n: number) => setProjectID(n);
 
   const tabs = [
     {
@@ -97,7 +104,7 @@ function App({
           <EuiSpacer />
           <FlameGraphContext.Provider value={pixiFlamegraph}>
             <FlameGraphNavigation getter={fetchPixiFlamechart} setter={setPixiFlamegraph} />
-            <PixiFlamechart projectID={'5'} />
+            <PixiFlamechart projectID={projectID.toString()} />
           </FlameGraphContext.Provider>
         </>
       ),
@@ -106,9 +113,16 @@ function App({
 
   return (
     <EuiPage>
-      <EuiPageBody style={{ margin: '0 auto' }}>
+      <EuiPageBody paddingSize="none">
+        <EuiPageHeader
+          paddingSize="s"
+          pageTitle="Continuous Profiling"
+          rightSideItems={[
+            <SettingsFlyout defaultProjectID={projectID} updateProjectID={updateProjectID} />,
+          ]}
+        />
         <EuiPageContent>
-          <EuiPageContentBody style={{ margin: '0 auto' }}>
+          <EuiPageContentBody paddingSize="none">
             <EuiTabbedContent tabs={tabs} initialSelectedTab={tabs[0]} autoFocus="selected" />
           </EuiPageContentBody>
         </EuiPageContent>
