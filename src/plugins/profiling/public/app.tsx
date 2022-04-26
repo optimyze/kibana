@@ -36,12 +36,7 @@ import { Services } from './services';
 
 type Props = Services;
 
-function App({
-  fetchTopN,
-  fetchElasticFlamechart,
-  fetchElasticFlamechart2,
-  fetchPixiFlamechart,
-}: Props) {
+function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) {
   const [projectID, setProjectID] = useState(5);
 
   const [topn, setTopN] = useState({
@@ -50,7 +45,6 @@ function App({
   });
 
   const [elasticFlamegraph, setElasticFlamegraph] = useState({ leaves: [] });
-  const [elasticFlamegraph2, setElasticFlamegraph2] = useState({ leaves: [] });
   const [pixiFlamegraph, setPixiFlamegraph] = useState({});
 
   const updateProjectID = (n: number) => setProjectID(n);
@@ -63,7 +57,12 @@ function App({
         <>
           <EuiSpacer />
           <TopNContext.Provider value={topn}>
-            <StackTraceNavigation projectID={projectID} fetchTopN={fetchTopN} setTopN={setTopN} />
+            <StackTraceNavigation
+              index={'profiling-events-all'}
+              projectID={projectID}
+              fetchTopN={fetchTopN}
+              setTopN={setTopN}
+            />
             <StackedBarChart id="topn" name="topn" height={400} x="x" y="y" category="g" />
             <ChartGrid maximum={10} />
           </TopNContext.Provider>
@@ -78,26 +77,10 @@ function App({
           <EuiSpacer />
           <FlameGraphContext.Provider value={elasticFlamegraph}>
             <FlameGraphNavigation
+              index={'profiling-events-all'}
               projectID={projectID}
               getter={fetchElasticFlamechart}
               setter={setElasticFlamegraph}
-            />
-            <FlameGraph id="flamechart" height={600} />
-          </FlameGraphContext.Provider>
-        </>
-      ),
-    },
-    {
-      id: 'flamegraph-elastic2',
-      name: 'FlameGraph (Elastic2)',
-      content: (
-        <>
-          <EuiSpacer />
-          <FlameGraphContext.Provider value={elasticFlamegraph2}>
-            <FlameGraphNavigation
-              projectID={projectID}
-              getter={fetchElasticFlamechart2}
-              setter={setElasticFlamegraph2}
             />
             <FlameGraph id="flamechart" height={600} />
           </FlameGraphContext.Provider>
@@ -112,6 +95,7 @@ function App({
           <EuiSpacer />
           <FlameGraphContext.Provider value={pixiFlamegraph}>
             <FlameGraphNavigation
+              index={'profiling-events-all'}
               projectID={projectID}
               getter={fetchPixiFlamechart}
               setter={setPixiFlamegraph}
