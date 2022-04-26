@@ -39,6 +39,7 @@ type Props = Services;
 function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) {
   const [index, setIndex] = useState('profiling-events-all');
   const [projectID, setProjectID] = useState(5);
+  const [n, setN] = useState(100);
 
   const [topn, setTopN] = useState({
     samples: [],
@@ -50,6 +51,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
 
   const updateIndex = (idx: string) => setIndex(idx);
   const updateProjectID = (n: number) => setProjectID(n);
+  const updateN = (n: number) => setN(n);
 
   const tabs = [
     {
@@ -62,7 +64,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
             <StackTraceNavigation
               index={index}
               projectID={projectID}
-              n={100}
+              n={n}
               fetchTopN={fetchTopN}
               setTopN={setTopN}
             />
@@ -82,7 +84,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
             <FlameGraphNavigation
               index={index}
               projectID={projectID}
-              n={100}
+              n={n}
               getter={fetchElasticFlamechart}
               setter={setElasticFlamegraph}
             />
@@ -101,7 +103,7 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
             <FlameGraphNavigation
               index={index}
               projectID={projectID}
-              n={100}
+              n={n}
               getter={fetchPixiFlamechart}
               setter={setPixiFlamegraph}
             />
@@ -124,6 +126,8 @@ function App({ fetchTopN, fetchElasticFlamechart, fetchPixiFlamechart }: Props) 
               updateIndex={updateIndex}
               defaultProjectID={projectID}
               updateProjectID={updateProjectID}
+              defaultN={n}
+              updateN={updateN}
             />,
           ]}
         />

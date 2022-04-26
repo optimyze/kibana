@@ -31,6 +31,9 @@ interface SettingsFlyoutProps {
 
   defaultProjectID: number;
   updateProjectID: (n: number) => void;
+
+  defaultN: number;
+  updateN: (n: number) => void;
 }
 
 export function SettingsFlyout({
@@ -38,9 +41,13 @@ export function SettingsFlyout({
   updateIndex,
   defaultProjectID,
   updateProjectID,
+  defaultN,
+  updateN,
 }: SettingsFlyoutProps) {
   const [index, setIndex] = useState(defaultIndex);
   const [projectID, setProjectID] = useState(defaultProjectID);
+  const [n, setN] = useState(defaultN);
+
   const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
   const flyoutTitleId = useGeneratedHtmlId({
     prefix: 'settings',
@@ -53,11 +60,13 @@ export function SettingsFlyout({
   const saveFlyout = () => {
     updateIndex(index);
     updateProjectID(projectID);
+    updateN(n);
     setIsFlyoutVisible(false);
   };
 
   const onIndexChange = (e: any) => setIndex(e.target.value);
   const onProjectIDChange = (e: any) => setProjectID(e.target.value);
+  const onNChange = (e: any) => setN(e.target.value);
 
   return (
     <div>
@@ -77,6 +86,9 @@ export function SettingsFlyout({
               </EuiFormRow>
               <EuiFormRow label="Project ID">
                 <EuiFieldText name="projectID" value={projectID} onChange={onProjectIDChange} />
+              </EuiFormRow>
+              <EuiFormRow label="N">
+                <EuiFieldText name="n" value={n} onChange={onNChange} />
               </EuiFormRow>
             </EuiForm>
           </EuiFlyoutBody>
