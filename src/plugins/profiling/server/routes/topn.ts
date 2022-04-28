@@ -20,6 +20,7 @@ import { findDownsampledIndex } from './downsampling';
 import { logExecutionLatency } from './logger';
 import { autoHistogramSumCountOnGroupByField, newProjectTimeQuery } from './mappings';
 import { mgetExecutables, mgetStackFrames, mgetStackTraces } from './stacktrace';
+import { getClient, getAggs } from './compat';
 
 export async function topNElasticSearchQuery(
   client: ElasticsearchClient,
@@ -67,7 +68,7 @@ export async function topNElasticSearchQuery(
     }
   );
 
-  const histogram = resEvents.body.aggregations?.histogram as AggregationsHistogramAggregate;
+  const histogram = getAggs(resEvents)?.histogram as AggregationsHistogramAggregate;
   const topN = createTopNBucketsByDate(histogram);
 
   if (searchField !== 'StackTraceID') {
@@ -136,10 +137,7 @@ export function queryTopNCommon(
     },
     async (context, request, response) => {
       const { index, projectID, timeFrom, timeTo, n } = request.query;
-      const client =
-        typeof context.core.then === 'function'
-          ? (await context.core).elasticsearch.client.asCurrentUser
-          : context.core.elasticsearch.client.asCurrentUser;
+      const client = await getClient(context);
 
       try {
         return await topNElasticSearchQuery(
