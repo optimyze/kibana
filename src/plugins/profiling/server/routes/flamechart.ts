@@ -149,8 +149,7 @@ async function queryFlameGraph(
       stackTraceEvents,
       stackTraces,
       stackFrames,
-      executables,
-      logger
+      executables
     );
   });
 }

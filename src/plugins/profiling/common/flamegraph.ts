@@ -5,7 +5,6 @@
  * in compliance with, at your election, the Elastic License 2.0 or the Server
  * Side Public License, v 1.
  */
-import { Logger } from 'kibana/server';
 import {
   CallerCalleeNode,
   createCallerCalleeIntermediateRoot,
@@ -140,16 +139,13 @@ export class FlameGraph {
   stackframes: Map<StackFrameID, StackFrame>;
   executables: Map<FileID, Executable>;
 
-  private readonly logger: Logger;
-
   constructor(
     sampleRate: number,
     totalCount: number,
     events: Map<StackTraceID, number>,
     stackTraces: Map<StackTraceID, StackTrace>,
     stackFrames: Map<StackFrameID, StackFrame>,
-    executables: Map<FileID, Executable>,
-    logger: Logger
+    executables: Map<FileID, Executable>
   ) {
     this.sampleRate = sampleRate;
     this.totalCount = totalCount;
@@ -157,7 +153,6 @@ export class FlameGraph {
     this.stacktraces = stackTraces;
     this.stackframes = stackFrames;
     this.executables = executables;
-    this.logger = logger;
   }
 
   private createColumnarCallerCallee(root: CallerCalleeNode): ColumnarCallerCallee {
