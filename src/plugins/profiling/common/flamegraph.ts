@@ -5,11 +5,7 @@
  * in compliance with, at your election, the Elastic License 2.0 or the Server
  * Side Public License, v 1.
  */
-import {
-  CallerCalleeNode,
-  createCallerCalleeIntermediateRoot,
-  fromCallerCalleeIntermediateNode,
-} from './callercallee';
+import { CallerCalleeNode, createCallerCalleeDiagram } from './callercallee';
 import {
   StackTraceID,
   StackFrameID,
@@ -17,17 +13,15 @@ import {
   StackTrace,
   StackFrame,
   Executable,
-  createStackFrameMetadata,
-  groupStackFrameMetadataByStackTrace,
 } from './profiling';
 
-type ColumnarCallerCallee = {
+interface ColumnarCallerCallee {
   Label: string[];
   Value: number[];
   X: number[];
   Y: number[];
   Color: number[];
-};
+}
 
 interface ElasticFlameGraph {
   Label: string[];
@@ -155,8 +149,11 @@ export class FlameGraph {
     this.executables = executables;
   }
 
+  // createColumnarCallerCallee flattens the intermediate representation of the diagram
+  // into a columnar format that is more compact than JSON. This representation will later
+  // need to be normalized into the response ultimately consumed by the flamegraph.
   private createColumnarCallerCallee(root: CallerCalleeNode): ColumnarCallerCallee {
-    let columnar: ColumnarCallerCallee = {
+    const columnar: ColumnarCallerCallee = {
       Label: [],
       Value: [],
       X: [],
@@ -169,7 +166,7 @@ export class FlameGraph {
       const { x, depth, node } = queue.pop()!;
 
       if (x === 0 && depth === 1) {
-        columnar.Label.push('root');
+        columnar.Label.push('root: Represents 100% of CPU time.');
       } else {
         columnar.Label.push(getLabel(node));
       }
@@ -195,6 +192,8 @@ export class FlameGraph {
     return columnar;
   }
 
+  // createElasticFlameGraph normalizes the intermediate columnar representation into the
+  // response ultimately consumed by the flamegraph.
   private createElasticFlameGraph(columnar: ColumnarCallerCallee): ElasticFlameGraph {
     const graph: ElasticFlameGraph = {
       Label: [],
@@ -226,35 +225,24 @@ export class FlameGraph {
   }
 
   toElastic(): ElasticFlameGraph {
-    const rootFrame = createStackFrameMetadata();
-    const frameMetadataForTraces = groupStackFrameMetadataByStackTrace(
+    const root = createCallerCalleeDiagram(
+      this.events,
       this.stacktraces,
       this.stackframes,
       this.executables
     );
-    const diagram = createCallerCalleeIntermediateRoot(
-      rootFrame,
-      this.events,
-      frameMetadataForTraces
-    );
-    const root = fromCallerCalleeIntermediateNode(diagram);
     return this.createElasticFlameGraph(this.createColumnarCallerCallee(root));
   }
 
   toPixi(): PixiFlameGraph {
-    const rootFrame = createStackFrameMetadata();
-    const frameMetadataForTraces = groupStackFrameMetadataByStackTrace(
+    const root = createCallerCalleeDiagram(
+      this.events,
       this.stacktraces,
       this.stackframes,
       this.executables
     );
-    const diagram = createCallerCalleeIntermediateRoot(
-      rootFrame,
-      this.events,
-      frameMetadataForTraces
-    );
     return {
-      ...fromCallerCalleeIntermediateNode(diagram),
+      ...root,
       TotalTraces: this.totalCount,
       TotalSeconds: 0,
     } as PixiFlameGraph;
