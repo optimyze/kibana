@@ -36,6 +36,25 @@ interface PixiFlameGraph extends CallerCalleeNode {
   TotalSeconds: number;
 }
 
+/*
+ * Helper to calculate the color of a given block to be drawn. The desirable outcomes of this are:
+ * Each of the following frame types should get a different set of color hues:
+ *
+ *   0 = Unsymbolized frame
+ *   1 = Python
+ *   2 = PHP
+ *   3 = Native
+ *   4 = Kernel
+ *   5 = JVM/Hotspot
+ *   6 = Ruby
+ *   7 = Perl
+ *   8 = JavaScript
+ *
+ * This is most easily achieved by mapping frame types to different color variations, using
+ * the x-position we can use different colors for adjacent blocks while keeping a similar hue
+ *
+ * Taken originally from prodfiler_ui/src/helpers/Pixi/frameTypeToColors.tsx
+ */
 const frameTypeToColors = [
   [0xfd8484, 0xfd9d9d, 0xfeb5b5, 0xfecece],
   [0xfcae6b, 0xfdbe89, 0xfdcea6, 0xfedfc4],
