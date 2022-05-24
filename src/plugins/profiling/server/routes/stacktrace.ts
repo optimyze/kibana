@@ -43,8 +43,37 @@ interface EncodedStackTrace {
   Type: string;
 }
 
-function runLengthDecodeReverse(input: Buffer): number[] {
-  return [];
+// runLengthDecodeReverse decodes a run-length encoding for the reversed input array.
+//
+// The input is a binary stream of 2-byte pairs (first byte is the length and the
+// second byte is the binary representation of the object). The output is a list of
+// uint8s in reverse order.
+//
+// E.g. byte array [5, 0, 2, 2] is converted into an uint8 array like
+// [2, 2, 0, 0, 0, 0, 0].
+export function runLengthDecodeReverse(input: Buffer): number[] {
+  let size = 0;
+  for (let i = 0; i < input.length; i += 2) {
+    size += input[i];
+  }
+
+  const output: number[] = new Array(size);
+
+  let i = input.length - 2;
+  let j = 0;
+  let count = input[i];
+
+  while (j < output.length) {
+    if (count > 0) {
+      output[j] = input[i + 1];
+      count--;
+      j++;
+    } else {
+      i -= 2;
+      count = input[i];
+    }
+  }
+  return output;
 }
 
 // decodeStackTrace unpacks an encoded stack trace from Elasticsearch

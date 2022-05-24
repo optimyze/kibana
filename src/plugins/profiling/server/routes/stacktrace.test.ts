@@ -6,7 +6,7 @@
  * Side Public License, v 1.
  */
 
-import { extractFileIDFromFrameID } from './stacktrace';
+import { extractFileIDFromFrameID, runLengthDecodeReverse } from './stacktrace';
 
 describe('Extract FileID from FrameID', () => {
   test('extractFileIDFromFrameID', () => {
@@ -26,6 +26,26 @@ describe('Extract FileID from FrameID', () => {
 
     for (const t of tests) {
       expect(extractFileIDFromFrameID(t.frameID)).toEqual(t.expected);
+    }
+  });
+
+  test('runLengthDecodeReverse', () => {
+    const tests: Array<{
+      bytes: Buffer;
+      expected: number[];
+    }> = [
+      {
+        bytes: Buffer.from([0x5, 0x0, 0x2, 0x2]),
+        expected: [2, 2, 0, 0, 0, 0, 0],
+      },
+      {
+        bytes: Buffer.from([0x1, 0x8]),
+        expected: [8],
+      },
+    ];
+
+    for (const t of tests) {
+      expect(runLengthDecodeReverse(t.bytes)).toEqual(t.expected);
     }
   });
 });
