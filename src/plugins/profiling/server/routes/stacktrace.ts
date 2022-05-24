@@ -23,36 +23,75 @@ import { getHitsItems, getDocs } from './compat';
 const traceLRU = new LRUCache<StackTraceID, StackTrace>({ max: 20000 });
 const frameIDToFileIDCache = new LRUCache<string, FileID>({ max: 100000 });
 
-// convertFrameIDToFileID extracts the FileID from the FrameID and returns as base64url string.
-export function extractFileIDFromFrameID(frameID: string): string {
-  const fileIDChunk = frameID.slice(0, 23);
-  let fileID = frameIDToFileIDCache.get(fileIDChunk) as string;
-  if (fileID) return fileID;
+const FILE_ID_LENGTH = 16;
+const FRAME_ID_LENGTH = 24;
 
-  // Step 1: Convert the base64-encoded frameID to an array of 22 bytes.
-  // We use 'base64url' instead of 'base64' because frameID is encoded URL-friendly.
-  // The first 16 bytes contain the FileID.
-  const buf = Buffer.from(fileIDChunk, 'base64url');
+interface EncodedStackTrace {
+  // This field is a base64-encoded byte string. The string represents a
+  // serialized list of frame IDs. Each frame ID is composed of two
+  // concatenated values: a 16-byte file ID and an 8-byte address or line
+  // number (depending on the context of the downstream reader).
+  //
+  //         Frame ID #1               Frame ID #2
+  // +----------------+--------+----------------+--------+----
+  // |     File ID    |  Addr  |     File ID    |  Addr  |
+  // +----------------+--------+----------------+--------+----
+  FrameID: string;
 
-  // Convert the FileID bytes into base64 with URL-friendly encoding.
-  // We have to manually append '==' since we use the FileID string for
-  // comparing / looking up the FileID strings in the ES indices, which have
-  // the '==' appended.
-  // We may want to remove '==' in the future to reduce the uncompressed storage size by 10%.
-  fileID = buf.toString('base64url', 0, 16) + '==';
-  frameIDToFileIDCache.set(fileIDChunk, fileID);
-  return fileID;
+  // This field is a run-length encoding of a list of uint8s. The order is
+  // reversed from the original input.
+  Type: string;
 }
 
-// extractFileIDArrayFromFrameIDArray extracts all FileIDs from the array of FrameIDs
-// and returns them as an array of base64url encoded strings. The order of this array
-// corresponds to the order of the input array.
-function extractFileIDArrayFromFrameIDArray(frameIDs: string[]): string[] {
-  const fileIDs = Array<string>(frameIDs.length);
-  for (let i = 0; i < frameIDs.length; i++) {
-    fileIDs[i] = extractFileIDFromFrameID(frameIDs[i]);
+function runLengthDecodeReverse(input: Buffer): number[] {
+  return [];
+}
+
+// decodeStackTrace unpacks an encoded stack trace from Elasticsearch
+function decodeStackTrace(input: EncodedStackTrace): StackTrace {
+  const serializedFrameIDs = Buffer.from(input.FrameID, 'base64url');
+  const countFileAndFrameIDs = serializedFrameIDs.length / FRAME_ID_LENGTH;
+  const fileIDs: string[] = new Array(countFileAndFrameIDs);
+  const frameIDs: string[] = new Array(countFileAndFrameIDs);
+
+  // Step 1: Convert the serialized frameID list into two separate lists
+  // (frame IDs and file IDs). The first 16 bytes of a frame ID contains
+  // the FileID.
+  for (let i = 0; i < serializedFrameIDs.length; i += FRAME_ID_LENGTH) {
+    const frameIDBytes = serializedFrameIDs.slice(i, i + FRAME_ID_LENGTH);
+    const frameID = frameIDBytes.toString('base64url');
+    const fileID = frameIDToFileIDCache.get(frameID) as string;
+    const j = Math.floor(i / FRAME_ID_LENGTH);
+
+    frameIDs[j] = frameID;
+
+    if (fileID) {
+      fileIDs[j] = fileID;
+    } else {
+      // Convert the FileID bytes into base64 with URL-friendly encoding
+      // ('base64url' instead of 'base64').
+      //
+      // We have to manually append '==' since we use the FileID string for
+      // comparing / looking up the FileID strings in the ES indices, which have
+      // the '==' appended.
+      //
+      // We may want to remove '==' in the future to reduce the uncompressed
+      // storage size by 10%.
+      const fileIDBytes = serializedFrameIDs.slice(i, i + FILE_ID_LENGTH);
+      fileIDs[j] = fileIDBytes.toString('base64url') + '==';
+      frameIDToFileIDCache.set(frameID, fileIDs[j]);
+    }
   }
-  return fileIDs;
+
+  // Step 2: Convert the run-length byte encoding into a list of uint8s.
+  const types = Buffer.from(input.Type, 'base64url');
+  const typeIDs = runLengthDecodeReverse(types);
+
+  return {
+    FileID: fileIDs,
+    FrameID: frameIDs,
+    Type: typeIDs,
+  } as StackTrace;
 }
 
 export async function searchStackTraces(
@@ -108,17 +147,12 @@ export async function searchStackTraces(
   await logExecutionLatency(logger, 'processing data', async () => {
     const traces = stackResponses.flatMap((response) => getHitsItems(response));
     for (const trace of traces) {
-      const frameIDs = trace.fields.FrameID as string[];
-      const fileIDs = extractFileIDArrayFromFrameIDArray(frameIDs);
-      stackTraces.set(trace._id, {
-        FileID: fileIDs,
-        FrameID: frameIDs,
-        Type: trace.fields.Type,
-      });
-      for (const frameID of frameIDs) {
+      const stackTrace = decodeStackTrace(trace.fields as EncodedStackTrace);
+      stackTraces.set(trace._id, stackTrace);
+      for (const frameID of stackTrace.FrameID) {
         stackFrameDocIDs.add(frameID);
       }
-      for (const fileID of fileIDs) {
+      for (const fileID of stackTrace.FileID) {
         executableDocIDs.add(fileID);
       }
     }
@@ -181,12 +215,7 @@ export async function mgetStackTraces(
           const traceid = trace._id as StackTraceID;
           let stackTrace = traceLRU.get(traceid) as StackTrace;
           if (!stackTrace) {
-            const frameIDs = trace._source.FrameID as string[];
-            stackTrace = {
-              FileID: extractFileIDArrayFromFrameIDArray(frameIDs),
-              FrameID: frameIDs,
-              Type: trace._source.Type,
-            };
+            stackTrace = decodeStackTrace(trace._source as EncodedStackTrace);
             traceLRU.set(traceid, stackTrace);
           }
 
