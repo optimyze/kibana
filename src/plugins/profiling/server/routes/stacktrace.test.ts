@@ -6,26 +6,41 @@
  * Side Public License, v 1.
  */
 
-import { extractFileIDFromFrameID, runLengthDecodeReverse } from './stacktrace';
+import { StackTrace } from '../../common/profiling';
+import { decodeStackTrace, EncodedStackTrace, runLengthDecodeReverse } from './stacktrace';
 
-describe('Extract FileID from FrameID', () => {
-  test('extractFileIDFromFrameID', () => {
+describe('Stack trace operations', () => {
+  test('decodeStackTrace', () => {
     const tests: Array<{
-      frameID: string;
-      expected: string;
+      original: EncodedStackTrace;
+      expected: StackTrace;
     }> = [
       {
-        frameID: 'aQpJmTLWydNvOapSFZOwKgAAAAAAB924',
-        expected: 'aQpJmTLWydNvOapSFZOwKg==',
+        original: {
+          FrameID: 'aQpJmTLWydNvOapSFZOwKgAAAAAAB924',
+          Type: Buffer.from([0x1, 0x0]).toString('base64url'),
+        } as EncodedStackTrace,
+        expected: {
+          FileID: ['aQpJmTLWydNvOapSFZOwKg=='],
+          FrameID: ['aQpJmTLWydNvOapSFZOwKgAAAAAAB924'],
+          Type: [0],
+        } as StackTrace,
       },
       {
-        frameID: 'hz_u-HGyrN6qeIk6UIJeCAAAAAAAAAZZ',
-        expected: 'hz_u-HGyrN6qeIk6UIJeCA==',
+        original: {
+          FrameID: 'hz_u-HGyrN6qeIk6UIJeCAAAAAAAAAZZ',
+          Type: Buffer.from([0x1, 0x8]).toString('base64url'),
+        } as EncodedStackTrace,
+        expected: {
+          FileID: ['hz_u-HGyrN6qeIk6UIJeCA=='],
+          FrameID: ['hz_u-HGyrN6qeIk6UIJeCAAAAAAAAAZZ'],
+          Type: [8],
+        } as StackTrace,
       },
     ];
 
     for (const t of tests) {
-      expect(extractFileIDFromFrameID(t.frameID)).toEqual(t.expected);
+      expect(decodeStackTrace(t.original)).toEqual(t.expected);
     }
   });
 

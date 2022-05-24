@@ -26,7 +26,7 @@ const frameIDToFileIDCache = new LRUCache<string, FileID>({ max: 100000 });
 const FILE_ID_LENGTH = 16;
 const FRAME_ID_LENGTH = 24;
 
-interface EncodedStackTrace {
+export interface EncodedStackTrace {
   // This field is a base64-encoded byte string. The string represents a
   // serialized list of frame IDs. Each frame ID is composed of two
   // concatenated values: a 16-byte file ID and an 8-byte address or line
@@ -77,7 +77,7 @@ export function runLengthDecodeReverse(input: Buffer): number[] {
 }
 
 // decodeStackTrace unpacks an encoded stack trace from Elasticsearch
-function decodeStackTrace(input: EncodedStackTrace): StackTrace {
+export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
   const serializedFrameIDs = Buffer.from(input.FrameID, 'base64url');
   const countFileAndFrameIDs = serializedFrameIDs.length / FRAME_ID_LENGTH;
   const fileIDs: string[] = new Array(countFileAndFrameIDs);
