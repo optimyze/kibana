@@ -65,18 +65,11 @@ export function runLengthDecodeReverse(input: Buffer, outputSize?: number): numb
 
   const output: number[] = new Array(size);
 
-  let i = input.length - 2;
-  let j = 0;
-  let count = input[i];
-
-  while (j < output.length) {
-    if (count > 0) {
-      output[j] = input[i + 1];
-      count--;
-      j++;
-    } else {
-      i -= 2;
-      count = input[i];
+  let idx = 0;
+  for (let i = input.length - 1; i >= 1; i -= 2) {
+    for (let j = 0; j < input[i - 1]; j++) {
+      output[idx] = input[i];
+      idx++;
     }
   }
 
