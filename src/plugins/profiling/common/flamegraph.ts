@@ -196,15 +196,14 @@ export class FlameGraph {
 
       node.Callees.sort((a: CallerCalleeNode, b: CallerCalleeNode) => b.Samples - a.Samples);
 
-      const xy = [];
       let delta = 0;
       for (const callee of node.Callees) {
-        xy.push({ x: x + delta, depth: depth + 1 });
         delta += callee.Samples;
       }
 
       for (let i = node.Callees.length - 1; i >= 0; i--) {
-        queue.push({ x: xy[i].x, depth: xy[i].depth, node: node.Callees[i] });
+        delta -= node.Callees[i].Samples;
+        queue.push({ x: x + delta, depth: depth + 1, node: node.Callees[i] });
       }
     }
 
