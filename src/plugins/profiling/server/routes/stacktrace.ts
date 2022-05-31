@@ -79,9 +79,9 @@ export function runLengthDecodeReverse(input: Buffer): number[] {
 // decodeStackTrace unpacks an encoded stack trace from Elasticsearch
 export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
   const serializedFrameIDs = Buffer.from(input.FrameID, 'base64url');
-  const countFileAndFrameIDs = serializedFrameIDs.length / FRAME_ID_LENGTH;
-  const fileIDs: string[] = new Array(countFileAndFrameIDs);
-  const frameIDs: string[] = new Array(countFileAndFrameIDs);
+  const countsFrameIDs = serializedFrameIDs.length / FRAME_ID_LENGTH;
+  const fileIDs: string[] = new Array(countsFrameIDs);
+  const frameIDs: string[] = new Array(countsFrameIDs);
 
   // Step 1: Convert the serialized frameID list into two separate lists
   // (frame IDs and file IDs). The first 16 bytes of a frame ID contains
