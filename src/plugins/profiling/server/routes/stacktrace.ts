@@ -51,10 +51,16 @@ export interface EncodedStackTrace {
 //
 // E.g. byte array [5, 0, 2, 2] is converted into an uint8 array like
 // [2, 2, 0, 0, 0, 0, 0].
-export function runLengthDecodeReverse(input: Buffer): number[] {
-  let size = 0;
-  for (let i = 0; i < input.length; i += 2) {
-    size += input[i];
+export function runLengthDecodeReverse(input: Buffer, outputSize?: number): number[] {
+  let size;
+
+  if (typeof outputSize === 'undefined') {
+    size = 0;
+    for (let i = 0; i < input.length; i += 2) {
+      size += input[i];
+    }
+  } else {
+    size = outputSize;
   }
 
   const output: number[] = new Array(size);
@@ -73,6 +79,7 @@ export function runLengthDecodeReverse(input: Buffer): number[] {
       count = input[i];
     }
   }
+
   return output;
 }
 
@@ -114,7 +121,7 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
 
   // Step 2: Convert the run-length byte encoding into a list of uint8s.
   const types = Buffer.from(input.Type, 'base64url');
-  const typeIDs = runLengthDecodeReverse(types);
+  const typeIDs = runLengthDecodeReverse(types, countsFrameIDs);
 
   return {
     FileID: fileIDs,

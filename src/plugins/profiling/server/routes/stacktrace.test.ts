@@ -44,7 +44,27 @@ describe('Stack trace operations', () => {
     }
   });
 
-  test('runLengthDecodeReverse', () => {
+  test('runLengthDecodeReverse with optional parameter', () => {
+    const tests: Array<{
+      bytes: Buffer;
+      expected: number[];
+    }> = [
+      {
+        bytes: Buffer.from([0x5, 0x0, 0x2, 0x2]),
+        expected: [2, 2, 0, 0, 0, 0, 0],
+      },
+      {
+        bytes: Buffer.from([0x1, 0x8]),
+        expected: [8],
+      },
+    ];
+
+    for (const t of tests) {
+      expect(runLengthDecodeReverse(t.bytes, t.expected.length)).toEqual(t.expected);
+    }
+  });
+
+  test('runLengthDecodeReverse without optional parameter', () => {
     const tests: Array<{
       bytes: Buffer;
       expected: number[];
