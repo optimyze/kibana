@@ -23,8 +23,8 @@ import { getHitsItems, getDocs } from './compat';
 const traceLRU = new LRUCache<StackTraceID, StackTrace>({ max: 20000 });
 const frameIDToFileIDCache = new LRUCache<string, FileID>({ max: 100000 });
 
-const FILE_ID_LENGTH = 16;
-const FRAME_ID_LENGTH = 24;
+const BASE64_FILE_ID_LENGTH = 22;
+const BASE64_FRAME_ID_LENGTH = 32;
 
 export interface EncodedStackTrace {
   // This field is a base64-encoded byte string. The string represents a
@@ -78,36 +78,30 @@ export function runLengthDecodeReverse(input: Buffer, outputSize?: number): numb
 
 // decodeStackTrace unpacks an encoded stack trace from Elasticsearch
 export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
-  const serializedFrameIDs = Buffer.from(input.FrameID, 'base64url');
-  const countsFrameIDs = serializedFrameIDs.length / FRAME_ID_LENGTH;
+  const countsFrameIDs = input.FrameID.length / BASE64_FRAME_ID_LENGTH;
   const fileIDs: string[] = new Array(countsFrameIDs);
   const frameIDs: string[] = new Array(countsFrameIDs);
 
-  // Step 1: Convert the serialized frameID list into two separate lists
-  // (frame IDs and file IDs). The first 16 bytes of a frame ID contains
-  // the FileID.
-  for (let i = 0; i < serializedFrameIDs.length; i += FRAME_ID_LENGTH) {
-    const frameIDBytes = serializedFrameIDs.slice(i, i + FRAME_ID_LENGTH);
-    const frameID = frameIDBytes.toString('base64url');
+  // Step 1: Convert the base64-encoded frameID list into two separate
+  // lists (frame IDs and file IDs). The first 22 bytes of a frame ID
+  // contains the FileID.
+  for (let i = 0; i < input.FrameID.length; i += BASE64_FRAME_ID_LENGTH) {
+    const frameID = input.FrameID.slice(i, i + BASE64_FRAME_ID_LENGTH);
     const fileID = frameIDToFileIDCache.get(frameID) as string;
-    const j = Math.floor(i / FRAME_ID_LENGTH);
+    const j = Math.floor(i / BASE64_FRAME_ID_LENGTH);
 
     frameIDs[j] = frameID;
 
     if (fileID) {
       fileIDs[j] = fileID;
     } else {
-      // Convert the FileID bytes into base64 with URL-friendly encoding
-      // ('base64url' instead of 'base64').
-      //
       // We have to manually append '==' since we use the FileID string for
       // comparing / looking up the FileID strings in the ES indices, which have
       // the '==' appended.
       //
       // We may want to remove '==' in the future to reduce the uncompressed
       // storage size by 10%.
-      const fileIDBytes = serializedFrameIDs.slice(i, i + FILE_ID_LENGTH);
-      fileIDs[j] = fileIDBytes.toString('base64url') + '==';
+      fileIDs[j] = frameID.slice(0, BASE64_FILE_ID_LENGTH) + '==';
       frameIDToFileIDCache.set(frameID, fileIDs[j]);
     }
   }
