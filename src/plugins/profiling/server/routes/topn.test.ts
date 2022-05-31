@@ -16,7 +16,7 @@ const anyQuery = 'any::query';
 const index = 'test';
 const testAgg = { aggs: { test: {} } };
 
-jest.mock('./mappings', () => ({
+jest.mock('./query', () => ({
   newProjectTimeQuery: (proj: string, from: string, to: string) => {
     return anyQuery;
   },
