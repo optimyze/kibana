@@ -83,8 +83,14 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
   const frameIDs: string[] = new Array(countsFrameIDs);
 
   // Step 1: Convert the base64-encoded frameID list into two separate
-  // lists (frame IDs and file IDs). The first 22 bytes of a frame ID
-  // contains the FileID.
+  // lists (frame IDs and file IDs), both of which are also base64-encoded.
+  //
+  // To get the frame ID, we grab the next 32 bytes.
+  //
+  // To get the file ID, we grab the first 22 bytes of the frame ID.
+  // However, since the file ID is base64-encoded using 21.33 bytes
+  // (16 * 4 / 3), then the 22 bytes have an extra 4 bits from the
+  // address (see diagram in definition of EncodedStackTrace).
   for (let i = 0; i < input.FrameID.length; i += BASE64_FRAME_ID_LENGTH) {
     const frameID = input.FrameID.slice(i, i + BASE64_FRAME_ID_LENGTH);
     const fileIDChunk = frameID.slice(0, BASE64_FILE_ID_LENGTH);
