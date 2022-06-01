@@ -87,7 +87,8 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
   // contains the FileID.
   for (let i = 0; i < input.FrameID.length; i += BASE64_FRAME_ID_LENGTH) {
     const frameID = input.FrameID.slice(i, i + BASE64_FRAME_ID_LENGTH);
-    const fileID = frameIDToFileIDCache.get(frameID) as string;
+    const fileIDChunk = frameID.slice(0, BASE64_FILE_ID_LENGTH);
+    const fileID = frameIDToFileIDCache.get(fileIDChunk) as string;
     const j = Math.floor(i / BASE64_FRAME_ID_LENGTH);
 
     frameIDs[j] = frameID;
@@ -95,14 +96,16 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
     if (fileID) {
       fileIDs[j] = fileID;
     } else {
+      const buf = Buffer.from(fileIDChunk, 'base64url');
+
       // We have to manually append '==' since we use the FileID string for
       // comparing / looking up the FileID strings in the ES indices, which have
       // the '==' appended.
       //
       // We may want to remove '==' in the future to reduce the uncompressed
       // storage size by 10%.
-      fileIDs[j] = frameID.slice(0, BASE64_FILE_ID_LENGTH) + '==';
-      frameIDToFileIDCache.set(frameID, fileIDs[j]);
+      fileIDs[j] = buf.toString('base64url', 0, 16) + '==';
+      frameIDToFileIDCache.set(fileIDChunk, fileIDs[j]);
     }
   }
 
