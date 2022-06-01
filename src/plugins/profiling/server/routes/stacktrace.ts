@@ -21,7 +21,7 @@ import { logExecutionLatency } from './logger';
 import { getHitsItems, getDocs } from './compat';
 
 const traceLRU = new LRUCache<StackTraceID, StackTrace>({ max: 20000 });
-const frameIDToFileIDCache = new LRUCache<string, FileID>({ max: 100000 });
+const fileIDChunkToFileIDCache = new LRUCache<string, FileID>({ max: 100000 });
 
 const BASE64_FILE_ID_LENGTH = 22;
 const BASE64_FRAME_ID_LENGTH = 32;
@@ -88,7 +88,7 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
   for (let i = 0; i < input.FrameID.length; i += BASE64_FRAME_ID_LENGTH) {
     const frameID = input.FrameID.slice(i, i + BASE64_FRAME_ID_LENGTH);
     const fileIDChunk = frameID.slice(0, BASE64_FILE_ID_LENGTH);
-    const fileID = frameIDToFileIDCache.get(fileIDChunk) as string;
+    const fileID = fileIDChunkToFileIDCache.get(fileIDChunk) as string;
     const j = Math.floor(i / BASE64_FRAME_ID_LENGTH);
 
     frameIDs[j] = frameID;
@@ -105,7 +105,7 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
       // We may want to remove '==' in the future to reduce the uncompressed
       // storage size by 10%.
       fileIDs[j] = buf.toString('base64url', 0, 16) + '==';
-      frameIDToFileIDCache.set(fileIDChunk, fileIDs[j]);
+      fileIDChunkToFileIDCache.set(fileIDChunk, fileIDs[j]);
     }
   }
 
