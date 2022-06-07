@@ -28,9 +28,11 @@ const BASE64_FRAME_ID_LENGTH = 32;
 
 export interface EncodedStackTrace {
   // This field is a base64-encoded byte string. The string represents a
-  // serialized list of frame IDs. Each frame ID is composed of two
-  // concatenated values: a 16-byte file ID and an 8-byte address or line
-  // number (depending on the context of the downstream reader).
+  // serialized list of frame IDs in which the order of frames are
+  // reversed to allow for prefix compression (leaf frame last). Each
+  // frame ID is composed of two concatenated values: a 16-byte file ID
+  // and an 8-byte address or line number (depending on the context of
+  // the downstream reader).
   //
   //         Frame ID #1               Frame ID #2
   // +----------------+--------+----------------+--------+----
@@ -95,7 +97,7 @@ export function decodeStackTrace(input: EncodedStackTrace): StackTrace {
     const frameID = input.FrameID.slice(i, i + BASE64_FRAME_ID_LENGTH);
     const fileIDChunk = frameID.slice(0, BASE64_FILE_ID_LENGTH);
     const fileID = fileIDChunkToFileIDCache.get(fileIDChunk) as string;
-    const j = Math.floor(i / BASE64_FRAME_ID_LENGTH);
+    const j = countsFrameIDs - Math.floor(i / BASE64_FRAME_ID_LENGTH) - 1;
 
     frameIDs[j] = frameID;
 
