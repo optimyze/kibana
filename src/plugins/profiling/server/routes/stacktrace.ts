@@ -45,6 +45,44 @@ export interface EncodedStackTrace {
   Type: string;
 }
 
+// runLengthEncodeReverse encodes the reversed input array using a
+// run-length encoding.
+//
+// The input is a list of uint8s. The output is a binary stream of
+// 2-byte pairs (first byte is the length and the second byte is the
+// binary representation of the object) in reverse order.
+//
+// E.g. uint8 array [2, 2, 0, 0, 0, 0, 0] is converted into the byte
+// array [5, 0, 2, 2].
+export function runLengthEncodeReverse(input: number[]): Buffer {
+  const output: number[] = [];
+
+  if (input.length === 0) {
+    return Buffer.from(output);
+  }
+
+  let count = 0;
+  let current = input[input.length - 1];
+
+  for (let i = input.length - 2; i >= 0; i--) {
+    const next = input[i];
+
+    if (next === current && count < 255) {
+      count++;
+      continue;
+    }
+
+    output.push(count + 1, current);
+
+    count = 0;
+    current = next;
+  }
+
+  output.push(count + 1, current);
+
+  return Buffer.from(output);
+}
+
 // runLengthDecodeReverse decodes a run-length encoding for the reversed input array.
 //
 // The input is a binary stream of 2-byte pairs (first byte is the length and the

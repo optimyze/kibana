@@ -7,7 +7,12 @@
  */
 
 import { StackTrace } from '../../common/profiling';
-import { decodeStackTrace, EncodedStackTrace, runLengthDecodeReverse } from './stacktrace';
+import {
+  decodeStackTrace,
+  EncodedStackTrace,
+  runLengthDecodeReverse,
+  runLengthEncodeReverse,
+} from './stacktrace';
 
 enum fileID {
   A = 'aQpJmTLWydNvOapSFZOwKg==',
@@ -28,6 +33,9 @@ enum frameID {
   G = 'gnEsgxvvEODj6iFYMQWYlAAAAAAGBJv6',
 }
 
+const frameTypeA = [0, 0, 0];
+const frameTypeB = [8, 8, 8, 8];
+
 describe('Stack trace operations', () => {
   test('decodeStackTrace', () => {
     const tests: Array<{
@@ -37,29 +45,37 @@ describe('Stack trace operations', () => {
       {
         original: {
           FrameID: frameID.A + frameID.B + frameID.C,
-          Type: Buffer.from([0x3, 0x0]).toString('base64url'),
+          Type: runLengthEncodeReverse(frameTypeA).toString('base64url'),
         } as EncodedStackTrace,
         expected: {
           FileID: [fileID.C, fileID.B, fileID.A],
           FrameID: [frameID.C, frameID.B, frameID.A],
-          Type: [0, 0, 0],
+          Type: frameTypeA,
         } as StackTrace,
       },
       {
         original: {
           FrameID: frameID.D + frameID.E + frameID.F + frameID.G,
-          Type: Buffer.from([0x4, 0x8]).toString('base64url'),
+          Type: runLengthEncodeReverse(frameTypeB).toString('base64url'),
         } as EncodedStackTrace,
         expected: {
           FileID: [fileID.F, fileID.F, fileID.E, fileID.D],
           FrameID: [frameID.G, frameID.F, frameID.E, frameID.D],
-          Type: [8, 8, 8, 8],
+          Type: frameTypeB,
         } as StackTrace,
       },
     ];
 
     for (const t of tests) {
       expect(decodeStackTrace(t.original)).toEqual(t.expected);
+    }
+  });
+
+  test('run length is fully reversible', () => {
+    const tests: number[][] = [[], [0], [0, 1, 2, 3], [0, 1, 1, 2, 2, 2, 3, 3, 3, 3]];
+
+    for (const t of tests) {
+      expect(runLengthDecodeReverse(runLengthEncodeReverse(t))).toEqual(t);
     }
   });
 
