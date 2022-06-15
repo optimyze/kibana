@@ -106,7 +106,7 @@ In order to deploy a custom Kibana build in our MVP or testing cluster, we have 
 You'll need a login to the Elastic container library. [Follow this doc to get access to the registry](https://github.com/elastic/infra/blob/master/docs/container-registry/accessing-the-docker-registry.md).
 
 From within the local `kibana` repository:
-- checkout the branch you want ot deploy with e.g. `git checkout 8.3+profiler`
+- checkout the branch you want to deploy with e.g. `git checkout 8.3+profiler`
 - if you didn't do this before on your branch: `yarn kb reset && yarn kbn bootstrap`
 - build the docker image with `node scripts/build --docker-images --skip-docker-ubi --skip-docker-ubuntu`
 - docker tag with `docker tag docker.elastic.co/kibana-ci/kibana-cloud:8.4.0-SNAPSHOT docker.elastic.co/observability-ci/kibana-profiling:8.4.0-$(git rev-parse --short HEAD)` (the previous build step shows the version, if in doubt look at the first entry of `docker image ls`)
