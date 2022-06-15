@@ -94,7 +94,7 @@ In order to deploy a custom ES build in our MVP or testing cluster, we have to b
 You'll need a login to the Elastic container library. [Follow this doc to get access to the registry](https://github.com/elastic/infra/blob/master/docs/container-registry/accessing-the-docker-registry.md).
 
 From within the local `elasticsearch` repository:
-- checkout the branch you want ot deploy with e.g. `git checkout prodfiler`
+- checkout the branch you want to deploy with e.g. `git checkout prodfiler`
 - build ES with `./gradlew -p distribution/docker build`
 - docker tag with `docker tag docker.elastic.co/elasticsearch-ci/elasticsearch-cloud:8.3.0-SNAPSHOT docker.elastic.co/observability-ci/elasticsearch-profiling:8.3.0-$(git rev-parse --short HEAD)` (the previous build step shows the version, if in doubt look at the first entry of `docker image ls`).
 - push the docker image with `docker push docker.elastic.co/observability-ci/elasticsearch-profiling:8.3.0-$(git rev-parse --short HEAD)`
