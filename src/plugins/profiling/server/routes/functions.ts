@@ -9,6 +9,7 @@ import { schema, TypeOf } from '@kbn/config-schema';
 import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
+import { createTopNFunctions } from '../../common/functions';
 import { StackTraceID } from '../../common/profiling';
 import { logExecutionLatency } from './logger';
 import { newProjectTimeQuery, ProjectTimeQuery } from './query';
@@ -21,6 +22,8 @@ async function queryTopNFunctions(
   client: ElasticsearchClient,
   index: string,
   filter: ProjectTimeQuery,
+  startIndex: number,
+  endIndex: number,
   sampleSize: number
 ): Promise<any> {
   const testing = index === 'profiling-events2';
@@ -121,7 +124,14 @@ async function queryTopNFunctions(
     mgetStackFrames(logger, client, stackFrameDocIDs),
     mgetExecutables(logger, client, executableDocIDs),
   ]).then(([stackFrames, executables]) => {
-    return {};
+    return createTopNFunctions(
+      stackTraceEvents,
+      stackTraces,
+      stackFrames,
+      executables,
+      startIndex,
+      endIndex
+    );
   });
 }
 
@@ -150,7 +160,8 @@ export function registerTopNFunctionsSearchRoute(
     },
     async (context, request, response) => {
       try {
-        const { index, projectID, timeFrom, timeTo }: QuerySchemaType = request.query;
+        const { index, projectID, timeFrom, timeTo, startIndex, endIndex }: QuerySchemaType =
+          request.query;
         const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
         const esClient = await getClient(context);
         const filter = newProjectTimeQuery(projectID, timeFrom, timeTo);
@@ -160,6 +171,8 @@ export function registerTopNFunctionsSearchRoute(
           esClient,
           index,
           filter,
+          startIndex,
+          endIndex,
           targetSampleSize
         );
         logger.info('returning payload response to client');
