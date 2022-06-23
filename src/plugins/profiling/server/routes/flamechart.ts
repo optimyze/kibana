@@ -10,7 +10,6 @@ import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { FlameGraph } from '../../common/flamegraph';
-import { StackTraceID } from '../../common/profiling';
 import { logExecutionLatency } from './logger';
 import { newProjectTimeQuery, ProjectTimeQuery } from './query';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
@@ -22,27 +21,6 @@ import {
   searchStackTraces,
 } from './stacktrace';
 import { getClient } from './compat';
-
-export function parallelMget(
-  nQueries: number,
-  stackTraceIDs: StackTraceID[],
-  chunkSize: number,
-  client: ElasticsearchClient
-): Array<Promise<any>> {
-  const futures: Array<Promise<any>> = [];
-  [...Array(nQueries).keys()].forEach((i) => {
-    const ids = stackTraceIDs.slice(chunkSize * i, chunkSize * (i + 1));
-    futures.push(
-      client.mget({
-        index: 'profiling-stacktraces',
-        ids,
-        _source_includes: ['FrameID', 'Type'],
-      })
-    );
-  });
-
-  return futures;
-}
 
 async function queryFlameGraph(
   logger: Logger,
