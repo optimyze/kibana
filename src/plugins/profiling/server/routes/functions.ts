@@ -10,12 +10,17 @@ import type { ElasticsearchClient, IRouter, Logger } from 'kibana/server';
 import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { createTopNFunctions } from '../../common/functions';
-import { StackTraceID } from '../../common/profiling';
 import { logExecutionLatency } from './logger';
 import { newProjectTimeQuery, ProjectTimeQuery } from './query';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
-import { mgetExecutables, mgetStackFrames, mgetStackTraces, searchStackTraces } from './stacktrace';
-import { getAggs, getClient } from './compat';
+import {
+  mgetExecutables,
+  mgetStackFrames,
+  mgetStackTraces,
+  searchEventsGroupByStackTrace,
+  searchStackTraces,
+} from './stacktrace';
+import { getClient } from './compat';
 
 async function queryTopNFunctions(
   logger: Logger,
@@ -39,70 +44,12 @@ async function queryTopNFunctions(
     }
   );
 
-  // Using filter_path is less readable and scrollSearch seems to be buggy - it
-  // applies filter_path only to the first array of results, but not on the following arrays.
-  // The downside of `_source` is: it takes 2.5x more time on the ES side (see "took" field).
-  // The `composite` keyword skips sorting the buckets as and return results 'as is'.
-  // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
-  const resEvents = await logExecutionLatency(
+  let { totalCount, stackTraceEvents } = await searchEventsGroupByStackTrace(
     logger,
-    'query to fetch events from ' + eventsIndex.name,
-    async () => {
-      return await client.search(
-        {
-          index: eventsIndex.name,
-          track_total_hits: false,
-          query: filter,
-          aggs: {
-            group_by: {
-              terms: {
-                // 'size' should be max 100k, but might be slightly more. Better be on the safe side.
-                size: 150000,
-                field: 'StackTraceID',
-                // 'execution_hint: map' skips the slow building of ordinals that we don't need.
-                // Especially with high cardinality fields, this makes aggregations really slow.
-                // E.g. it reduces the latency from 70s to 0.7s on our 8.1. MVP cluster (as of 28.04.2022).
-                execution_hint: 'map',
-              },
-              aggs: {
-                count: {
-                  sum: {
-                    field: 'Count',
-                  },
-                },
-              },
-            },
-            total_count: {
-              sum: {
-                field: 'Count',
-              },
-            },
-          },
-        },
-        {
-          // Adrien and Dario found out this is a work-around for some bug in 8.1.
-          // It reduces the query time by avoiding unneeded searches.
-          querystring: {
-            pre_filter_shard_size: 1,
-            filter_path:
-              'aggregations.group_by.buckets.key,aggregations.group_by.buckets.count,aggregations.total_count,_shards.failures',
-          },
-        }
-      );
-    }
+    client,
+    eventsIndex,
+    filter
   );
-
-  let totalCount: number = getAggs(resEvents)?.total_count.value;
-  const stackTraceEvents = new Map<StackTraceID, number>();
-
-  await logExecutionLatency(logger, 'processing events data', async () => {
-    getAggs(resEvents)?.group_by.buckets.forEach((item: any) => {
-      const traceid: StackTraceID = item.key;
-      stackTraceEvents.set(traceid, item.count.value);
-    });
-  });
-  logger.info('events total count: ' + totalCount);
-  logger.info('unique stacktraces: ' + stackTraceEvents.size);
 
   // Manual downsampling if totalCount exceeds sampleSize by 10%.
   if (totalCount > sampleSize * 1.1) {
