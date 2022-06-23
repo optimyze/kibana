@@ -13,42 +13,57 @@ import {
 
 import { StackFrameMetadata } from './profiling';
 
-type TopNBucket = {
-  Value: string;
+export type TopNSample = {
+  Timestamp: number;
   Count: number;
+  Category: string;
 };
 
-type TopNBucketsByDate = {
-  TopN: Record<number, TopNBucket[]>;
+export type TopNSamples = {
+  TopN: TopNSample[];
 };
 
-type TopNContainers = TopNBucketsByDate;
-type TopNDeployments = TopNBucketsByDate;
-type TopNHosts = TopNBucketsByDate;
-type TopNThreads = TopNBucketsByDate;
+type TopNContainers = TopNSamples;
+type TopNDeployments = TopNSamples;
+type TopNHosts = TopNSamples;
+type TopNThreads = TopNSamples;
 
-type TopNTraces = TopNBucketsByDate & {
+type TopNTraces = TopNSamples & {
   Metadata: Record<string, StackFrameMetadata[]>;
 };
 
 type TopN = TopNContainers | TopNDeployments | TopNHosts | TopNThreads | TopNTraces;
 
-export function createTopNBucketsByDate(
-  histogram: AggregationsHistogramAggregate
-): TopNBucketsByDate {
-  const topNBucketsByDate: Record<number, TopNBucket[]> = {};
+export function createTopNSamples(histogram: AggregationsHistogramAggregate): TopNSample[] {
+  const buckets = new Map();
+  const uniqueCategories = new Set<string>();
 
   const histogramBuckets = (histogram?.buckets as AggregationsHistogramBucket[]) ?? [];
   for (let i = 0; i < histogramBuckets.length; i++) {
-    const key = histogramBuckets[i].key / 1000;
-    topNBucketsByDate[key] = [];
+    const counts = new Map();
     histogramBuckets[i].group_by.buckets.forEach((item: any) => {
-      topNBucketsByDate[key].push({
-        Value: item.key,
-        Count: item.count.value,
-      });
+      uniqueCategories.add(item.key);
+      counts.set(item.key, item.count.value);
     });
+    buckets.set(histogramBuckets[i].key, counts);
   }
 
-  return { TopN: topNBucketsByDate };
+  // Normalize samples so there are an equal number of data points per each timestamp
+  const samples: TopNSample[] = [];
+  for (const timestamp of buckets.keys()) {
+    for (const category of uniqueCategories.values()) {
+      const sample: TopNSample = { Timestamp: timestamp, Count: 0, Category: category };
+      if (buckets.get(timestamp).has(category)) {
+        sample.Count = buckets.get(timestamp).get(category);
+      }
+      samples.push(sample);
+    }
+  }
+
+  // Sort by timestamp ascending, count descending, and category ascending
+  samples.sort(
+    (a, b) => a.Timestamp - b.Timestamp || b.Count - a.Count || a.Category.localeCompare(b.Category)
+  );
+
+  return samples;
 }

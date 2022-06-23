@@ -6,6 +6,8 @@
  * Side Public License, v 1.
  */
 
+import { TopNSample } from './topn';
+
 export const PLUGIN_ID = 'profiling';
 export const PLUGIN_NAME = 'profiling';
 
@@ -23,37 +25,15 @@ export function getRoutePaths() {
   };
 }
 
-function toMilliseconds(seconds: string): number {
-  return parseInt(seconds, 10) * 1000;
-}
-
-export function getTopN(obj: any) {
-  const data = [];
-
-  if (obj.TopN!) {
-    for (const x in obj.TopN) {
-      if (obj.TopN.hasOwnProperty(x)) {
-        const values = obj.TopN[x];
-        for (let i = 0; i < values.length; i++) {
-          const v = values[i];
-          data.push({ x: toMilliseconds(x), y: v.Count, g: v.Value });
-        }
-      }
-    }
-  }
-
-  return data;
-}
-
-export function groupSamplesByCategory(samples: any) {
+export function groupSamplesByCategory(samples: TopNSample[]) {
   const series = new Map();
   for (let i = 0; i < samples.length; i++) {
     const v = samples[i];
-    if (!series.has(v.g)) {
-      series.set(v.g, []);
+    if (!series.has(v.Category)) {
+      series.set(v.Category, []);
     }
-    const value = series.get(v.g);
-    value.push([v.x, v.y]);
+    const value = series.get(v.Category);
+    value.push([v.Timestamp, v.Count]);
   }
   return series;
 }
