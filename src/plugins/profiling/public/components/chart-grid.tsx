@@ -26,48 +26,49 @@ export interface ChartGridProps {
   maximum: number;
 }
 
+function printSubCharts(subcharts: TopNSubchart[], maximum: number) {
+  const ncharts = Math.min(maximum, subcharts.length);
+
+  const charts = [];
+  for (let i = 0; i < ncharts; i++) {
+    const subchart = subcharts[i];
+    const uniqueID = `bar-chart-${i}`;
+
+    const barchart = (
+      <BarChart
+        id={uniqueID}
+        name={subchart.Category}
+        height={200}
+        data={subchart.Series}
+        x="Timestamp"
+        y="Count"
+      />
+    );
+
+    const title = (
+      <EuiFlexGroup gutterSize="m">
+        <EuiFlexItem grow={false}>
+          <EuiNotificationBadge>{i + 1}</EuiNotificationBadge>
+        </EuiFlexItem>
+        <EuiFlexItem>{subchart.Category}</EuiFlexItem>
+        <EuiFlexItem grow={false}>{subchart.Percentage.toFixed(2)}%</EuiFlexItem>
+      </EuiFlexGroup>
+    );
+
+    const card = (
+      <EuiSplitPanel.Outer>
+        <EuiSplitPanel.Inner>{title}</EuiSplitPanel.Inner>
+        <EuiSplitPanel.Inner>{barchart}</EuiSplitPanel.Inner>
+      </EuiSplitPanel.Outer>
+    );
+
+    charts.push(<EuiFlexItem>{card}</EuiFlexItem>);
+  }
+  return charts;
+}
+
 export const ChartGrid: React.FC<ChartGridProps> = ({ maximum }) => {
   const ctx = useContext(TopNContext);
-  const printSubCharts = (subcharts: TopNSubchart[]) => {
-    const ncharts = Math.min(maximum, subcharts.length);
-
-    const charts = [];
-    for (let i = 0; i < ncharts; i++) {
-      const subchart = subcharts[i];
-      const uniqueID = `bar-chart-${i}`;
-
-      const barchart = (
-        <BarChart
-          id={uniqueID}
-          name={subchart.Category}
-          height={200}
-          data={subchart.Series}
-          x="Timestamp"
-          y="Count"
-        />
-      );
-
-      const title = (
-        <EuiFlexGroup gutterSize="m">
-          <EuiFlexItem grow={false}>
-            <EuiNotificationBadge>{i + 1}</EuiNotificationBadge>
-          </EuiFlexItem>
-          <EuiFlexItem>{subchart.Category}</EuiFlexItem>
-          <EuiFlexItem grow={false}>{subchart.Percentage.toFixed(2)}%</EuiFlexItem>
-        </EuiFlexGroup>
-      );
-
-      const card = (
-        <EuiSplitPanel.Outer>
-          <EuiSplitPanel.Inner>{title}</EuiSplitPanel.Inner>
-          <EuiSplitPanel.Inner>{barchart}</EuiSplitPanel.Inner>
-        </EuiSplitPanel.Outer>
-      );
-
-      charts.push(<EuiFlexItem>{card}</EuiFlexItem>);
-    }
-    return charts;
-  };
 
   useEffect(() => {
     console.log(new Date().toISOString(), 'updated chart-grid');
@@ -81,7 +82,7 @@ export const ChartGrid: React.FC<ChartGridProps> = ({ maximum }) => {
       </EuiTitle>
       <EuiSpacer />
       <EuiFlexGrid columns={2} gutterSize="s">
-        {printSubCharts(ctx.subcharts)}
+        {printSubCharts(ctx.subcharts, maximum)}
       </EuiFlexGrid>
     </>
   );
