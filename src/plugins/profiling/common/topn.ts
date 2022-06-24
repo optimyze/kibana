@@ -71,3 +71,16 @@ export function createTopNSamples(histogram: AggregationsHistogramAggregate): To
 
   return samples;
 }
+
+export function groupSamplesByCategory(samples: TopNSample[]) {
+  const series = new Map();
+  for (let i = 0; i < samples.length; i++) {
+    const v = samples[i];
+    if (!series.has(v.Category)) {
+      series.set(v.Category, []);
+    }
+    const value = series.get(v.Category);
+    value.push([v.Timestamp, v.Count]);
+  }
+  return series;
+}

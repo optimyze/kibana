@@ -10,8 +10,7 @@ import React, { useEffect, useState } from 'react';
 
 import { EuiButtonGroup } from '@elastic/eui';
 
-import { groupSamplesByCategory } from '../../common';
-import { TopNSample, TopNSamples } from '../../common/topn';
+import { groupSamplesByCategory, TopNSample, TopNSamples } from '../../common/topn';
 
 export const StackTraceNavigation = ({ index, projectID, n, timeRange, fetchTopN, setTopN }) => {
   const topnButtonGroupPrefix = 'topnButtonGroup';

@@ -6,8 +6,6 @@
  * Side Public License, v 1.
  */
 
-import { TopNSample } from './topn';
-
 export const PLUGIN_ID = 'profiling';
 export const PLUGIN_NAME = 'profiling';
 
@@ -23,19 +21,6 @@ export function getRoutePaths() {
     TopNTraces: `${BASE_ROUTE_PATH}/topn/traces`,
     FlamechartElastic: `${BASE_ROUTE_PATH}/flamechart/elastic`,
   };
-}
-
-export function groupSamplesByCategory(samples: TopNSample[]) {
-  const series = new Map();
-  for (let i = 0; i < samples.length; i++) {
-    const v = samples[i];
-    if (!series.has(v.Category)) {
-      series.set(v.Category, []);
-    }
-    const value = series.get(v.Category);
-    value.push([v.Timestamp, v.Count]);
-  }
-  return series;
 }
 
 export function timeRangeFromRequest(request: any): [number, number] {
