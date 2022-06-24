@@ -61,9 +61,13 @@ export function createTopNSamples(histogram: AggregationsHistogramAggregate): To
   }
 
   // Sort by timestamp ascending, count descending, and category ascending
-  samples.sort(
-    (a, b) => a.Timestamp - b.Timestamp || b.Count - a.Count || a.Category.localeCompare(b.Category)
-  );
+  samples.sort((a, b) => {
+    if (a.Timestamp < b.Timestamp) return -1;
+    if (a.Timestamp > b.Timestamp) return 1;
+    if (a.Count > b.Count) return -1;
+    if (a.Count < b.Count) return 1;
+    return a.Category.localeCompare(b.Category);
+  });
 
   return samples;
 }
