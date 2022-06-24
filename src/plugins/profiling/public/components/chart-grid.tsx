@@ -9,11 +9,12 @@
 import React, { useContext, useEffect } from 'react';
 
 import {
-  EuiCard,
   EuiFlexGrid,
+  EuiFlexGroup,
   EuiFlexItem,
   EuiNotificationBadge,
   EuiSpacer,
+  EuiSplitPanel,
   EuiTitle,
 } from '@elastic/eui';
 
@@ -41,21 +42,20 @@ export const ChartGrid: React.FC<ChartGridProps> = ({ maximum }) => {
       );
 
       const title = (
-        <div>
-          <EuiNotificationBadge>{i + 1}</EuiNotificationBadge>
-          &emsp;
-          {keys[i]}
-        </div>
+        <EuiFlexGroup gutterSize="m">
+          <EuiFlexItem grow={false}>
+            <EuiNotificationBadge>{i + 1}</EuiNotificationBadge>
+          </EuiFlexItem>
+          <EuiFlexItem>{keys[i]}</EuiFlexItem>
+          <EuiFlexItem grow={false}>100%</EuiFlexItem>
+        </EuiFlexGroup>
       );
 
       const card = (
-        <EuiCard
-          layout="horizontal"
-          onClick={() => {}}
-          title={title}
-          display="plain"
-          description={barchart}
-        />
+        <EuiSplitPanel.Outer>
+          <EuiSplitPanel.Inner>{title}</EuiSplitPanel.Inner>
+          <EuiSplitPanel.Inner>{barchart}</EuiSplitPanel.Inner>
+        </EuiSplitPanel.Outer>
       );
 
       charts.push(<EuiFlexItem>{card}</EuiFlexItem>);
