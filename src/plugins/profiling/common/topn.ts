@@ -15,9 +15,12 @@ import {
 
 import { StackFrameMetadata } from './profiling';
 
-export interface TopNSample {
+export interface CountPerTime {
   Timestamp: number;
   Count: number;
+}
+
+export interface TopNSample extends CountPerTime {
   Category: string;
 }
 
@@ -62,28 +65,43 @@ export function createTopNSamples(histogram: AggregationsHistogramAggregate): To
   return orderBy(samples, ['Timestamp', 'Count', 'Category'], ['asc', 'desc', 'asc']);
 }
 
-export function groupSamplesByCategory(samples: TopNSample[]) {
-  const series = new Map();
-  for (let i = 0; i < samples.length; i++) {
-    const v = samples[i];
-    if (!series.has(v.Category)) {
-      series.set(v.Category, []);
-    }
-    const value = series.get(v.Category);
-    value.push([v.Timestamp, v.Count]);
-  }
-  return series;
+export interface TopNSubchart {
+  Category: string;
+  Percentage: number;
+  Series: CountPerTime[];
 }
 
-export function groupSamplesByCategory(samples: TopNSample[]) {
-  const series = new Map();
+export function groupSamplesByCategory(samples: TopNSample[]): TopNSubchart[] {
+  let total = 0;
+  const totalPerCategory = new Map<string, number>();
+  const series = new Map<string, CountPerTime[]>();
+
   for (let i = 0; i < samples.length; i++) {
     const v = samples[i];
     if (!series.has(v.Category)) {
       series.set(v.Category, []);
+      totalPerCategory.set(v.Category, 0);
     }
-    const value = series.get(v.Category);
-    value.push([v.Timestamp, v.Count]);
+    total += v.Count;
+    totalPerCategory.set(v.Category, totalPerCategory.get(v.Category)! + v.Count);
+    const data = series.get(v.Category)!;
+    data.push({ Timestamp: v.Timestamp, Count: v.Count });
   }
-  return series;
+
+  const subcharts: TopNSubchart[] = [];
+  for (const [category, data] of series) {
+    subcharts.push({
+      Category: category,
+      Percentage: (totalPerCategory.get(category)! / total) * 100,
+      Series: data,
+    });
+  }
+
+  subcharts.sort((a, b) => {
+    if (a.Percentage > b.Percentage) return -1;
+    if (a.Percentage < b.Percentage) return 1;
+    return a.Category.localeCompare(b.Category);
+  });
+
+  return subcharts;
 }
