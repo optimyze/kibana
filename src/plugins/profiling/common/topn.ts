@@ -13,26 +13,19 @@ import {
 
 import { StackFrameMetadata } from './profiling';
 
-export type TopNSample = {
+export interface TopNSample {
   Timestamp: number;
   Count: number;
   Category: string;
-};
+}
 
-export type TopNSamples = {
+export interface TopNSamples {
   TopN: TopNSample[];
-};
+}
 
-type TopNContainers = TopNSamples;
-type TopNDeployments = TopNSamples;
-type TopNHosts = TopNSamples;
-type TopNThreads = TopNSamples;
-
-type TopNTraces = TopNSamples & {
+interface TopNTraces extends TopNSamples {
   Metadata: Record<string, StackFrameMetadata[]>;
-};
-
-type TopN = TopNContainers | TopNDeployments | TopNHosts | TopNThreads | TopNTraces;
+}
 
 export function createTopNSamples(histogram: AggregationsHistogramAggregate): TopNSample[] {
   const buckets = new Map();
