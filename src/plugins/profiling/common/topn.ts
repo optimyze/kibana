@@ -30,26 +30,26 @@ interface TopNTraces extends TopNSamples {
 }
 
 export function createTopNSamples(histogram: AggregationsHistogramAggregate): TopNSample[] {
-  const buckets = new Map();
+  const bucketsByTimestamp = new Map();
   const uniqueCategories = new Set<string>();
 
   const histogramBuckets = (histogram?.buckets as AggregationsHistogramBucket[]) ?? [];
   for (let i = 0; i < histogramBuckets.length; i++) {
-    const counts = new Map();
+    const frameCountsByCategory = new Map();
     histogramBuckets[i].group_by.buckets.forEach((item: any) => {
       uniqueCategories.add(item.key);
-      counts.set(item.key, item.count.value);
+      frameCountsByCategory.set(item.key, item.count.value);
     });
-    buckets.set(histogramBuckets[i].key, counts);
+    bucketsByTimestamp.set(histogramBuckets[i].key, frameCountsByCategory);
   }
 
   // Normalize samples so there are an equal number of data points per each timestamp
   const samples: TopNSample[] = [];
-  for (const timestamp of buckets.keys()) {
+  for (const timestamp of bucketsByTimestamp.keys()) {
     for (const category of uniqueCategories.values()) {
       const sample: TopNSample = { Timestamp: timestamp, Count: 0, Category: category };
-      if (buckets.get(timestamp).has(category)) {
-        sample.Count = buckets.get(timestamp).get(category);
+      if (bucketsByTimestamp.get(timestamp).has(category)) {
+        sample.Count = bucketsByTimestamp.get(timestamp).get(category);
       }
       samples.push(sample);
     }
