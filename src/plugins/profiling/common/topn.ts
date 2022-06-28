@@ -47,10 +47,12 @@ export function createTopNSamples(histogram: AggregationsHistogramAggregate): To
   const samples: TopNSample[] = [];
   for (const timestamp of bucketsByTimestamp.keys()) {
     for (const category of uniqueCategories.values()) {
-      const sample: TopNSample = { Timestamp: timestamp, Count: 0, Category: category };
-      if (bucketsByTimestamp.get(timestamp).has(category)) {
-        sample.Count = bucketsByTimestamp.get(timestamp).get(category);
-      }
+      const frameCountsByCategory = bucketsByTimestamp.get(timestamp);
+      const sample: TopNSample = {
+        Timestamp: timestamp,
+        Count: frameCountsByCategory.get(category) ?? 0,
+        Category: category
+      };
       samples.push(sample);
     }
   }
