@@ -74,28 +74,28 @@ export interface TopNSubchart {
 export function groupSamplesByCategory(samples: TopNSample[]): TopNSubchart[] {
   let total = 0;
   const totalPerCategory = new Map<string, number>();
-  const series = new Map<string, CountPerTime[]>();
+  const seriesByCategory = new Map<string, CountPerTime[]>();
 
   for (let i = 0; i < samples.length; i++) {
-    const v = samples[i];
-    if (!series.has(v.Category)) {
-      series.set(v.Category, []);
-      totalPerCategory.set(v.Category, 0);
+    const sample = samples[i];
+    if (!seriesByCategory.has(sample.Category)) {
+      seriesByCategory.set(sample.Category, []);
+      totalPerCategory.set(sample.Category, 0);
     }
-    total += v.Count;
-    totalPerCategory.set(v.Category, totalPerCategory.get(v.Category)! + v.Count);
-    const data = series.get(v.Category)!;
-    data.push({ Timestamp: v.Timestamp, Count: v.Count });
+    total += sample.Count;
+    totalPerCategory.set(sample.Category, totalPerCategory.get(sample.Category)! + sample.Count);
+    const series = seriesByCategory.get(sample.Category)!;
+    series.push({ Timestamp: sample.Timestamp, Count: sample.Count });
   }
 
   const subcharts: TopNSubchart[] = [];
-  for (const [category, data] of series) {
+  for (const [category, series] of seriesByCategory) {
     subcharts.push({
       Category: category,
       Percentage: (totalPerCategory.get(category)! / total) * 100,
-      Series: data,
+      Series: series,
     });
   }
 
-  return orderBy(subcharts, ['Percentage', 'Category'], ['desc', 'asc'])
+  return orderBy(subcharts, ['Percentage', 'Category'], ['desc', 'asc']);
 }
