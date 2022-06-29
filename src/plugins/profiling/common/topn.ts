@@ -73,26 +73,24 @@ export interface TopNSubchart {
 
 export function groupSamplesByCategory(samples: TopNSample[]): TopNSubchart[] {
   let total = 0;
-  const totalPerCategory = new Map<string, number>();
   const seriesByCategory = new Map<string, CountPerTime[]>();
 
   for (let i = 0; i < samples.length; i++) {
     const sample = samples[i];
     if (!seriesByCategory.has(sample.Category)) {
       seriesByCategory.set(sample.Category, []);
-      totalPerCategory.set(sample.Category, 0);
     }
     total += sample.Count;
-    totalPerCategory.set(sample.Category, totalPerCategory.get(sample.Category)! + sample.Count);
     const series = seriesByCategory.get(sample.Category)!;
     series.push({ Timestamp: sample.Timestamp, Count: sample.Count });
   }
 
   const subcharts: TopNSubchart[] = [];
   for (const [category, series] of seriesByCategory) {
+    const totalPerCategory = series.reduce((sum, { Count }) => sum + Count, 0);
     subcharts.push({
       Category: category,
-      Percentage: (totalPerCategory.get(category)! / total) * 100,
+      Percentage: (totalPerCategory / total) * 100,
       Series: series,
     });
   }
