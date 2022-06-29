@@ -97,11 +97,5 @@ export function groupSamplesByCategory(samples: TopNSample[]): TopNSubchart[] {
     });
   }
 
-  subcharts.sort((a, b) => {
-    if (a.Percentage > b.Percentage) return -1;
-    if (a.Percentage < b.Percentage) return 1;
-    return a.Category.localeCompare(b.Category);
-  });
-
-  return subcharts;
+  return orderBy(subcharts, ['Percentage', 'Category'], ['desc', 'asc'])
 }
