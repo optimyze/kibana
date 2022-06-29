@@ -33,13 +33,15 @@ export function createTopNSamples(histogram: AggregationsHistogramAggregate): To
   const bucketsByTimestamp = new Map();
   const uniqueCategories = new Set<string>();
 
+  // Convert the histogram into nested maps and record the unique categories
   const histogramBuckets = (histogram?.buckets as AggregationsHistogramBucket[]) ?? [];
   for (let i = 0; i < histogramBuckets.length; i++) {
     const frameCountsByCategory = new Map();
-    histogramBuckets[i].group_by.buckets.forEach((item: any) => {
-      uniqueCategories.add(item.key);
-      frameCountsByCategory.set(item.key, item.count.value);
-    });
+    const items = histogramBuckets[i].group_by.buckets;
+    for (let j = 0; j < items.length; j++) {
+      uniqueCategories.add(items[j].key);
+      frameCountsByCategory.set(items[j].key, items[j].count.value);
+    }
     bucketsByTimestamp.set(histogramBuckets[i].key, frameCountsByCategory);
   }
 
@@ -51,7 +53,7 @@ export function createTopNSamples(histogram: AggregationsHistogramAggregate): To
       const sample: TopNSample = {
         Timestamp: timestamp,
         Count: frameCountsByCategory.get(category) ?? 0,
-        Category: category
+        Category: category,
       };
       samples.push(sample);
     }
