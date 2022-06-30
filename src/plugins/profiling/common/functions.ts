@@ -71,7 +71,7 @@ export function createTopNFunctions(
           FrameGroup: frameGroup,
           CountExclusive: 0,
           CountInclusive: 0,
-        } as TopNFunctionAndFrameGroup);
+        });
       }
 
       const topNFunction = topNFunctions.get(frameGroupID)!;
@@ -110,14 +110,11 @@ export function createTopNFunctions(
     endIndex = topN.length;
   }
 
-  const framesAndCounts = topN.slice(startIndex, endIndex).map(
-    (topN) =>
-      ({
-        Frame: topN.Frame,
-        CountExclusive: topN.CountExclusive,
-        CountInclusive: topN.CountInclusive,
-      } as TopNFunction)
-  );
+  const framesAndCounts = topN.slice(startIndex, endIndex).map((topN) => ({
+    Frame: topN.Frame,
+    CountExclusive: topN.CountExclusive,
+    CountInclusive: topN.CountInclusive,
+  }));
 
   return {
     TotalCount: totalCount,
