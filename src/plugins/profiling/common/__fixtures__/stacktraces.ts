@@ -6,13 +6,6 @@
  * Side Public License, v 1.
  */
 
-import {
-  createCallerCalleeDiagram,
-  createCallerCalleeIntermediateNode,
-  fromCallerCalleeIntermediateNode,
-} from '../callercallee';
-import { createStackFrameMetadata, hashFrameGroup } from '../profiling';
-
 enum stackTraceID {
   A = 'yU2Oct2ct0HkxJ7-pRcPkg==',
   B = 'Xt8aKN70PDXpMDLCOmojzQ==',
