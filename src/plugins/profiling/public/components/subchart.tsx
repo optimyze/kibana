@@ -8,9 +8,15 @@
 
 import React, { useEffect } from 'react';
 
-import { AreaSeries, Axis, Chart, CurveType, ScaleType, Settings } from '@elastic/charts';
-
-import { timeFormatter } from '@elastic/charts';
+import {
+  AreaSeries,
+  Axis,
+  Chart,
+  CurveType,
+  ScaleType,
+  Settings,
+  timeFormatter,
+} from '@elastic/charts';
 
 export interface SubChartProps {
   id: string;
