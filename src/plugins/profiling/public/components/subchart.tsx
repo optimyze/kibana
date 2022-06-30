@@ -12,7 +12,7 @@ import { Axis, BarSeries, Chart, Settings } from '@elastic/charts';
 
 import { timeFormatter } from '@elastic/charts';
 
-export interface BarChartProps {
+export interface SubChartProps {
   id: string;
   name: string;
   height: number;
@@ -21,9 +21,9 @@ export interface BarChartProps {
   y: string;
 }
 
-export const BarChart: React.FC<BarChartProps> = ({ id, name, height, data, x, y }) => {
+export const SubChart: React.FC<SubChartProps> = ({ id, name, height, data, x, y }) => {
   useEffect(() => {
-    console.log(new Date().toISOString(), 'updated bar-chart');
+    console.log(new Date().toISOString(), 'updated subchart {name}');
   }, [id, name, height, data, x, y]);
 
   return (
