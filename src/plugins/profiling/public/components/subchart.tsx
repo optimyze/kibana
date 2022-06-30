@@ -18,11 +18,13 @@ import {
   timeFormatter,
 } from '@elastic/charts';
 
+import { CountPerTime } from '../../common/topn';
+
 export interface SubChartProps {
   id: string;
   name: string;
   height: number;
-  data: any[];
+  data: CountPerTime[];
   x: string;
   y: string;
 }
