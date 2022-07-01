@@ -119,7 +119,7 @@ export function registerFlameChartElasticSearchRoute(
           body: flamegraph.toElastic(),
         });
       } catch (e) {
-        logger.error('Caught exception when fetching Flamegraph data: ' + e.message);
+        logger.error('Caught exception when fetching Flamegraph data: ' + e);
         return response.customError({
           statusCode: e.statusCode ?? 500,
           body: {

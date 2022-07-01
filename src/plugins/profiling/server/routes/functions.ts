@@ -128,7 +128,7 @@ export function registerTopNFunctionsSearchRoute(
           body: topNFunctions,
         });
       } catch (e) {
-        logger.error('Caught exception when fetching Top N functions data: ' + e.message);
+        logger.error('Caught exception when fetching Top N functions data: ' + e);
         return response.customError({
           statusCode: e.statusCode ?? 500,
           body: {
