@@ -11,7 +11,7 @@ import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { FlameGraph } from '../../common/flamegraph';
 import { logExecutionLatency } from './logger';
-import { newProjectTimeQuery, ProjectTimeQuery } from './query';
+import { createProjectTimeQuery, ProjectTimeQuery } from './query';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
 import {
   mgetExecutables,
@@ -104,7 +104,7 @@ export function registerFlameChartElasticSearchRoute(
 
       try {
         const esClient = await getClient(context);
-        const filter = newProjectTimeQuery(projectID!, timeFrom!, timeTo!);
+        const filter = createProjectTimeQuery(projectID!, timeFrom!, timeTo!);
 
         const flamegraph = await queryFlameGraph(
           logger,

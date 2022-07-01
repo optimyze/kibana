@@ -11,7 +11,7 @@ import type { DataRequestHandlerContext } from '../../../data/server';
 import { getRoutePaths } from '../../common';
 import { createTopNFunctions } from '../../common/functions';
 import { logExecutionLatency } from './logger';
-import { newProjectTimeQuery, ProjectTimeQuery } from './query';
+import { createProjectTimeQuery, ProjectTimeQuery } from './query';
 import { downsampleEventsRandomly, findDownsampledIndex } from './downsampling';
 import {
   mgetExecutables,
@@ -111,7 +111,7 @@ export function registerTopNFunctionsSearchRoute(
           request.query;
         const targetSampleSize = 20000; // minimum number of samples to get statistically sound results
         const esClient = await getClient(context);
-        const filter = newProjectTimeQuery(projectID, timeFrom, timeTo);
+        const filter = createProjectTimeQuery(projectID, timeFrom, timeTo);
 
         const topNFunctions = await queryTopNFunctions(
           logger,

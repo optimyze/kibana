@@ -30,7 +30,7 @@ export interface ProjectTimeQuery {
   };
 }
 
-export function newProjectTimeQuery(
+export function createProjectTimeQuery(
   projectID: string,
   timeFrom: string,
   timeTo: string
