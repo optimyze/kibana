@@ -22,19 +22,19 @@ import {
   StackTraceID,
 } from './profiling';
 
-type TopNFunctionAndFrameGroup = {
+interface TopNFunctionAndFrameGroup {
   Frame: StackFrameMetadata;
   FrameGroup: FrameGroup;
   CountExclusive: number;
   CountInclusive: number;
-};
+}
 
 type TopNFunction = Pick<TopNFunctionAndFrameGroup, 'Frame' | 'CountExclusive' | 'CountInclusive'>;
 
-type TopNFunctions = {
+interface TopNFunctions {
   TotalCount: number;
   TopN: TopNFunction[];
-};
+}
 
 export function createTopNFunctions(
   events: Map<StackTraceID, number>,
