@@ -31,11 +31,6 @@ async function queryTopNFunctions(
   endIndex: number,
   sampleSize: number
 ): Promise<any> {
-  const testing = index === 'profiling-events2';
-  if (testing) {
-    index = 'profiling-events-all';
-  }
-
   const eventsIndex = await logExecutionLatency(
     logger,
     'query to find downsampled index',
@@ -62,10 +57,11 @@ async function queryTopNFunctions(
     logger.info('unique downsampled stacktraces: ' + stackTraceEvents.size);
   }
 
-  // profiling-stacktraces is configured with 16 shards
-  const { stackTraces, stackFrameDocIDs, executableDocIDs } = testing
-    ? await searchStackTraces(logger, client, stackTraceEvents)
-    : await mgetStackTraces(logger, client, stackTraceEvents);
+  const { stackTraces, stackFrameDocIDs, executableDocIDs } = await mgetStackTraces(
+    logger,
+    client,
+    stackTraceEvents
+  );
 
   return Promise.all([
     mgetStackFrames(logger, client, stackFrameDocIDs),
