@@ -225,12 +225,11 @@ export async function searchEventsGroupByStackTrace(
   const totalCount: number = getAggs(resEvents)?.total_count.value;
   const stackTraceEvents = new Map<StackTraceID, number>();
 
-  await logExecutionLatency(logger, 'processing events data', async () => {
-    getAggs(resEvents)?.group_by.buckets.forEach((item: any) => {
-      const traceid: StackTraceID = item.key;
-      stackTraceEvents.set(traceid, item.count.value);
-    });
+  getAggs(resEvents)?.group_by.buckets.forEach((item: any) => {
+    const traceid: StackTraceID = item.key;
+    stackTraceEvents.set(traceid, item.count.value);
   });
+
   logger.info('events total count: ' + totalCount);
   logger.info('unique stacktraces: ' + stackTraceEvents.size);
 
