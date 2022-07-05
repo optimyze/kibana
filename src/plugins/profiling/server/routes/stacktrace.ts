@@ -174,11 +174,6 @@ export async function searchEventsGroupByStackTrace(
   index: DownsampledEventsIndex,
   filter: ProjectTimeQuery
 ) {
-  // Using filter_path is less readable and scrollSearch seems to be buggy - it
-  // applies filter_path only to the first array of results, but not on the following arrays.
-  // The downside of `_source` is: it takes 2.5x more time on the ES side (see "took" field).
-  // The `composite` keyword skips sorting the buckets as and return results 'as is'.
-  // A max bucket size of 100000 needs a cluster level setting "search.max_buckets: 100000".
   const resEvents = await logExecutionLatency(
     logger,
     'query to fetch events from ' + index.name,
