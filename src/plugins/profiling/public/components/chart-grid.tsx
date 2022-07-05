@@ -18,7 +18,7 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 
-import { BarChart } from './bar-chart';
+import { SubChart } from './subchart';
 import { TopNContext } from './contexts/topn';
 import { TopNSubchart } from '../../common/topn';
 
@@ -32,10 +32,10 @@ function printSubCharts(subcharts: TopNSubchart[], maximum: number) {
   const charts = [];
   for (let i = 0; i < ncharts; i++) {
     const subchart = subcharts[i];
-    const uniqueID = `bar-chart-${i}`;
+    const uniqueID = `subchart-${i}`;
 
     const barchart = (
-      <BarChart
+      <SubChart
         id={uniqueID}
         name={subchart.Category}
         height={200}
